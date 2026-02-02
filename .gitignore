@@ -1,0 +1,26 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+*.pdf
+*.epub
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.log
+.cache/

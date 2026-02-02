@@ -1,0 +1,468 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'EB Garamond', serif;
+    background: #2c2c2c;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#flipbook-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#flipbook {
+    width: 90vw;
+    max-width: 1200px;
+    height: 80vh;
+    max-height: 800px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    position: relative;
+    perspective: 2000px;
+}
+
+.page {
+    background: #faf8f3;
+    padding: 60px 80px;
+    font-size: 18px;
+    line-height: 1.8;
+    color: #2c2c2c;
+    overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.page.cover {
+    background: #0a0a0a;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
+    color: #e8e6e1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px;
+    position: relative;
+    border: 2px solid #3a3a3a;
+}
+
+.page.cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px);
+    pointer-events: none;
+}
+
+.cover-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 600px;
+}
+
+.cover-ornament {
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #8b4513 20%, #8b4513 80%, transparent);
+    margin: 30px auto;
+    position: relative;
+}
+
+.cover-ornament::before,
+.cover-ornament::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8b4513;
+    font-size: 0.8rem;
+}
+
+.cover-ornament::before {
+    left: -15px;
+}
+
+.cover-ornament::after {
+    right: -15px;
+}
+
+.cover-ornament.top {
+    margin-top: 0;
+}
+
+.cover-ornament.bottom {
+    margin-bottom: 0;
+}
+
+.page.cover h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 3.8rem;
+    margin: 40px 0 20px 0;
+    letter-spacing: 0.15em;
+    line-height: 1.2;
+    color: #e8e6e1;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    font-weight: 400;
+}
+
+.page.cover .subtitle {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.4rem;
+    margin: 20px 0 40px 0;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: #c9c7c2;
+    text-transform: uppercase;
+}
+
+.cover-divider {
+    width: 150px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8b4513 20%, #8b4513 80%, transparent);
+    margin: 40px auto;
+}
+
+.page.cover .institute-name {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.6rem;
+    margin: 40px 0 20px 0;
+    letter-spacing: 0.15em;
+    color: #d4d2cd;
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+.page.cover .tagline {
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-top: 50px;
+    color: #a8a6a1;
+    line-height: 1.6;
+    font-family: 'EB Garamond', serif;
+}
+
+.page.toc {
+    background: #faf8f3;
+}
+
+.page.toc h1 {
+    font-family: 'Spectral SC', serif;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 3px solid #2c2c2c;
+    padding-bottom: 1rem;
+}
+
+.page.toc ul {
+    list-style: none;
+    padding: 0;
+}
+
+.page.toc li {
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+    position: relative;
+}
+
+.page.toc li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: #666;
+}
+
+.page.toc a {
+    color: #2c2c2c;
+    text-decoration: none;
+    font-size: 1.3rem;
+    transition: color 0.2s;
+}
+
+.page.toc a:hover {
+    color: #8b4513;
+    text-decoration: underline;
+}
+
+.page.toc .section-title {
+    font-family: 'Spectral SC', serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #666;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.page h1 {
+    font-family: 'Spectral SC', serif;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
+    margin-top: 0;
+    color: #1a1a1a;
+    border-bottom: 2px solid #8b4513;
+    padding-bottom: 0.5rem;
+}
+
+.page h2 {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.6rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: #2c2c2c;
+}
+
+.page h3 {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.3rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.8rem;
+    color: #444;
+}
+
+.page p {
+    margin-bottom: 1.2rem;
+    text-align: justify;
+}
+
+.page blockquote {
+    border-left: 4px solid #8b4513;
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #555;
+}
+
+.page code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9em;
+    background: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+.page pre {
+    font-family: 'IBM Plex Mono', monospace;
+    background: #f0f0f0;
+    padding: 1rem;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.page hr {
+    border: none;
+    border-top: 2px solid #ddd;
+    margin: 2rem 0;
+}
+
+.page .marginalia {
+    position: absolute;
+    right: -100px;
+    width: 80px;
+    font-size: 0.9rem;
+    color: #888;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+#controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 25px;
+    z-index: 1000;
+}
+
+#controls button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #faf8f3;
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#controls button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+#controls button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#page-info {
+    color: #faf8f3;
+    font-family: 'Spectral SC', serif;
+    font-size: 1rem;
+    min-width: 120px;
+    text-align: center;
+}
+
+/* Mobile: Single page view with flip */
+@media (max-width: 768px) {
+    body {
+        overflow: hidden;
+    }
+    
+    #flipbook-container {
+        width: 100vw;
+        height: 100vh;
+    }
+    
+    #flipbook {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page {
+        padding: 30px 20px;
+        font-size: 16px;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: left center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Only show current page and adjacent pages on mobile */
+    .page:not(.active):not(.next):not(.prev) {
+        display: none;
+    }
+    
+    .page.active {
+        transform: rotateY(0deg);
+        z-index: 10;
+        opacity: 1;
+    }
+    
+    .page.next {
+        transform: rotateY(0deg);
+        z-index: 9;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .page.prev {
+        transform: rotateY(0deg);
+        z-index: 8;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .page.flipping {
+        transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+    }
+    
+    .page.cover h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+    
+    .page.cover .subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .page.cover .institute-name {
+        font-size: 1.2rem;
+    }
+    
+    .page.cover .tagline {
+        font-size: 0.95rem;
+        margin-top: 30px;
+    }
+    
+    .page h1 {
+        font-size: 1.8rem;
+    }
+    
+    .page h2 {
+        font-size: 1.4rem;
+    }
+    
+    .page h3 {
+        font-size: 1.2rem;
+    }
+    
+    #controls {
+        bottom: 20px;
+        padding: 8px 16px;
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    #controls button {
+        width: 44px;
+        height: 44px;
+        font-size: 1.8rem;
+    }
+    
+    #page-info {
+        font-size: 0.9rem;
+        min-width: 100px;
+    }
+    
+    /* Swipe indicator */
+    .swipe-hint {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.85rem;
+        pointer-events: none;
+        z-index: 100;
+        animation: fadeInOut 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+    }
+}

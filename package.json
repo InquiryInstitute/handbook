@@ -1,0 +1,16 @@
+{
+  "name": "handbook-recently-deceased",
+  "version": "1.0.0",
+  "description": "Handbook for the Recently Deceased - A Practical Guide for Faculty of Inquiry Institute",
+  "scripts": {
+    "build:pages": "node scripts/build-pages.js",
+    "dev": "python3 -m http.server 8000 --directory docs"
+  },
+  "keywords": [
+    "handbook",
+    "inquiry-institute",
+    "faculty-guide"
+  ],
+  "author": "Inquiry Institute",
+  "license": "CC-BY-NC-4.0"
+}
