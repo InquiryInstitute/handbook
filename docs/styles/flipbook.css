@@ -25,11 +25,11 @@ body {
 }
 
 #flipbook {
-    width: 800px;
+    width: 1600px; /* Double width for two pages side by side */
     height: 1000px;
-    max-width: 90vw;
+    max-width: 95vw;
     max-height: 90vh;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 8 / 5;
     margin: 0 auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     position: relative;
@@ -37,6 +37,38 @@ body {
     background: #1a1a1a;
     overflow: visible;
     z-index: 1;
+}
+
+/* Desktop: two-page spread */
+@media (min-width: 769px) {
+    #flipbook {
+        display: flex;
+        flex-direction: row;
+    }
+    
+    .page {
+        width: 50%; /* Each page takes half the width */
+    }
+    
+    .page.left-page {
+        left: 0;
+        transform-origin: right center;
+    }
+    
+    .page.right-page {
+        left: 50%;
+        transform-origin: left center;
+    }
+    
+    .page.cover {
+        width: 100%; /* Cover spans full width when closed */
+        left: 0;
+        transform-origin: left center;
+    }
+    
+    .page.cover.opened {
+        width: 50%; /* Cover becomes left page when opened */
+    }
 }
 
 .page {
@@ -54,7 +86,7 @@ body {
     transform-origin: left center;
     transform-style: preserve-3d;
     backface-visibility: hidden;
-    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), width 0.6s;
     will-change: transform, opacity;
     z-index: 10;
 }

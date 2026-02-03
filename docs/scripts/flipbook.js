@@ -409,8 +409,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeDesktopFlip(pageElements) {
+        // Helper to determine if page is left (even) or right (odd)
+        function isLeftPage(index) {
+            return index % 2 === 0;
+        }
+        
+        function positionPage(page, index) {
+            if (index === 0 && currentPage === 0) {
+                // Cover is full width when closed
+                page.classList.remove('left-page', 'right-page', 'opened');
+                page.style.width = '100%';
+                page.style.left = '0';
+                page.style.transformOrigin = 'left center';
+            } else {
+                // Position pages side by side
+                if (isLeftPage(index)) {
+                    page.classList.add('left-page');
+                    page.classList.remove('right-page');
+                    page.style.width = '50%';
+                    page.style.left = '0';
+                    page.style.transformOrigin = 'right center';
+                } else {
+                    page.classList.add('right-page');
+                    page.classList.remove('left-page');
+                    page.style.width = '50%';
+                    page.style.left = '50%';
+                    page.style.transformOrigin = 'left center';
+                }
+            }
+        }
+        
         // Desktop: Book-style flip - start with book "closed" (only cover visible)
         pageElements.forEach((page, i) => {
+            positionPage(page, i);
             if (i === 0) {
                 // Cover is visible (book closed) - ensure it's shown
                 page.style.zIndex = '2000';
@@ -439,9 +470,38 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Desktop showPage:', prevIndex, '->', targetIndex, direction);
             
-            // Ensure both pages are visible for animation
-            pageElements[prevIndex].style.display = 'block';
-            pageElements[prevIndex].style.visibility = 'visible';
+            // Special handling: opening the book (cover to first page)
+            if (prevIndex === 0 && targetIndex === 1) {
+                // Cover becomes left page, page 1 becomes right page
+                positionPage(pageElements[0], 0);
+                pageElements[0].classList.add('opened');
+                positionPage(pageElements[1], 1);
+                
+                pageElements[0].style.width = '50%';
+                pageElements[0].style.zIndex = '2000';
+                pageElements[1].style.zIndex = '2001';
+            }
+            
+            // Position target page
+            positionPage(pageElements[targetIndex], targetIndex);
+            
+            // Show both pages in the spread
+            const leftPageIndex = isLeftPage(targetIndex) ? targetIndex : targetIndex - 1;
+            const rightPageIndex = isLeftPage(targetIndex) ? targetIndex + 1 : targetIndex;
+            
+            // Ensure both pages in spread are visible
+            if (leftPageIndex >= 0 && leftPageIndex < pageElements.length) {
+                pageElements[leftPageIndex].style.display = 'block';
+                pageElements[leftPageIndex].style.visibility = 'visible';
+                positionPage(pageElements[leftPageIndex], leftPageIndex);
+            }
+            if (rightPageIndex >= 0 && rightPageIndex < pageElements.length) {
+                pageElements[rightPageIndex].style.display = 'block';
+                pageElements[rightPageIndex].style.visibility = 'visible';
+                positionPage(pageElements[rightPageIndex], rightPageIndex);
+            }
+            
+            // Ensure target page is visible
             pageElements[targetIndex].style.display = 'block';
             pageElements[targetIndex].style.visibility = 'visible';
             
@@ -453,11 +513,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             pageElements[targetIndex].style.opacity = '0';
             
-            // Update z-index for proper stacking - ensure target is always on top
-            // Use high z-index values to ensure pages appear above container
+            // Update z-index for proper stacking
             const baseZ = 2000;
             pageElements[targetIndex].style.zIndex = String(baseZ + targetIndex + 1);
-            pageElements[prevIndex].style.zIndex = String(baseZ + prevIndex);
+            if (leftPageIndex >= 0) {
+                pageElements[leftPageIndex].style.zIndex = String(baseZ + leftPageIndex);
+            }
+            if (rightPageIndex < pageElements.length) {
+                pageElements[rightPageIndex].style.zIndex = String(baseZ + rightPageIndex);
+            }
             
             // Force reflow to ensure initial state is rendered
             void pageElements[targetIndex].offsetHeight;
@@ -481,13 +545,19 @@ document.addEventListener('DOMContentLoaded', function() {
             currentPage = targetIndex;
             
             setTimeout(() => {
-                // Reset previous page position and hide if not adjacent
+                // Reset previous page position and hide if not in current spread
                 pageElements[prevIndex].style.transform = 'rotateY(0deg)';
                 pageElements[prevIndex].classList.remove('active');
-                if (Math.abs(prevIndex - targetIndex) > 1) {
-                    pageElements[prevIndex].style.display = 'none';
-                    pageElements[prevIndex].style.visibility = 'hidden';
-                }
+                
+                // Hide pages not in current spread
+                pageElements.forEach((page, i) => {
+                    const inSpread = (i === leftPageIndex || i === rightPageIndex);
+                    if (!inSpread && i !== 0) { // Keep cover visible if we're past it
+                        page.style.display = 'none';
+                        page.style.visibility = 'hidden';
+                    }
+                });
+                
                 isFlipping = false;
                 updateControls();
                 console.log('Desktop flip complete, now on page', currentPage);
