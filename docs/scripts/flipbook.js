@@ -250,6 +250,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Load pages into stPageFlip
             pageFlipInstance.loadFromHTML(pageElements);
             
+            // For desktop, ensure two-page spread is working
+            if (!isMobile && pageFlipInstance) {
+                // Force update to ensure two-page layout
+                setTimeout(() => {
+                    pageFlipInstance.update();
+                    // Check if pages are showing correctly
+                    const currentIndex = pageFlipInstance.getCurrentPageIndex();
+                    console.log('Current page index:', currentIndex, 'Total pages:', pageElements.length);
+                }, 300);
+            }
+            
             // Event listeners
             pageFlipInstance.on('flip', (e) => {
                 const currentPage = e.data;
