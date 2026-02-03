@@ -17,13 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Page data - will be populated from chapters
     const pages = [];
-    let currentPage = 0;
     let pageFlipInstance = null;
-    let isFlipping = false;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
     
     // Load pages
     async function loadPages() {
@@ -89,47 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Initialize flipbook (cover is already visible)
+        // Initialize flipbook
         initializeFlipbook();
-    }
-    
-    // Simple markdown to HTML converter
-    function markdownToHtml(markdown, title) {
-        let html = markdown;
-        
-        // Headers
-        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-        
-        // Bold and italic
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
-        // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-        
-        // Code blocks
-        html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-        
-        // Blockquotes
-        html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-        
-        // Horizontal rules
-        html = html.replace(/^---$/gim, '<hr>');
-        
-        // Paragraphs
-        const lines = html.split('\n');
-        html = lines.map(line => {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed.match(/^<[^>]+>/) || trimmed.match(/^#|^>|^`/)) {
-                return line;
-            }
-            return `<p>${trimmed}</p>`;
-        }).join('\n');
-        
-        return `<div class="page"><h1>${title}</h1>${html}</div>`;
     }
     
     function splitIntoPages(html, title) {
@@ -218,597 +173,170 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeFlipbook() {
-        // Cover is already in DOM, don't recreate it
-        const existingCover = document.getElementById('cover-page');
+        // Clear flipbook container (except cover)
+        const coverPage = document.getElementById('cover-page');
+        const existingPages = Array.from(flipbook.querySelectorAll('.page:not(#cover-page)'));
+        existingPages.forEach(page => page.remove());
         
-        // Create page elements for non-cover pages
+        // Create page elements for stPageFlip
+        const pageElements = [];
+        
+        // Add cover if it exists
+        if (coverPage) {
+            pageElements.push(coverPage);
+        }
+        
+        // Create other pages
         pages.forEach((page, index) => {
-            // Skip cover if it already exists in DOM
-            if (index === 0 && existingCover) {
+            // Skip cover if it already exists
+            if (index === 0 && coverPage) {
                 return;
             }
             
             const pageElement = document.createElement('div');
             pageElement.className = `page ${page.type}`;
+            pageElement.setAttribute('data-density', 'hard');
             
-            // If page has element reference, use it; otherwise parse HTML
-            if (page.element) {
-                // Already in DOM, just reference it
-                page.element = page.element;
-            } else {
-                // Create new element from HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = page.html;
-                const content = tempDiv.firstElementChild || tempDiv;
-                
-                // Ensure page has content
-                if (!content.innerHTML || content.innerHTML.trim().length === 0) {
-                    console.warn('Empty page detected at index', index, 'skipping');
-                    return; // Skip empty pages
-                }
-                
-                pageElement.innerHTML = content.innerHTML;
-                pageElement.className = content.className || pageElement.className;
-                
-                // Ensure page has background
-                if (!pageElement.style.background && !pageElement.classList.contains('cover')) {
-                    pageElement.style.background = '#faf8f3';
-                }
+            // Create new element from HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = page.html;
+            const content = tempDiv.firstElementChild || tempDiv;
+            
+            // Ensure page has content
+            if (!content.innerHTML || content.innerHTML.trim().length === 0) {
+                console.warn('Empty page detected at index', index, 'skipping');
+                return; // Skip empty pages
             }
             
-            // Immediately hide all pages except cover (book starts closed)
-            if (index > 0) {
-                pageElement.style.display = 'none';
-                pageElement.style.opacity = '0';
-                pageElement.style.visibility = 'hidden';
+            pageElement.innerHTML = content.innerHTML;
+            pageElement.className = content.className || pageElement.className;
+            
+            // Ensure page has background
+            if (!pageElement.style.background && !pageElement.classList.contains('cover')) {
+                pageElement.style.background = '#faf8f3';
             }
             
             flipbook.appendChild(pageElement);
+            pageElements.push(pageElement);
         });
         
-        // Ensure TOC page exists if it wasn't created
-        if (pages.length > 1 && !flipbook.querySelector('.page.toc')) {
-            const tocPage = document.createElement('div');
-            tocPage.className = 'page toc';
-            tocPage.innerHTML = pages[1].html || '<div class="page toc"><h1>Table of Contents</h1><p>Loading...</p></div>';
-            tocPage.style.display = 'none';
-            tocPage.style.opacity = '0';
-            tocPage.style.visibility = 'hidden';
-            flipbook.appendChild(tocPage);
-        }
+        // Initialize stPageFlip
+        const bookWidth = isMobile ? 800 : 1600; // Single page on mobile, two pages on desktop
+        const bookHeight = 1000;
         
-        // Initialize page flip with CSS-based animation
-        // Using a custom implementation for better control
-        initializePageFlip();
-        totalPagesSpan.textContent = Math.max(pages.length, flipbook.querySelectorAll('.page').length);
-        updateControls();
+        const settings = {
+            width: bookWidth,
+            height: bookHeight,
+            minWidth: 300,
+            maxWidth: 2000,
+            minHeight: 400,
+            maxHeight: 1500,
+            maxShadowOpacity: 0.5,
+            showCover: true,
+            mobileScrollSupport: isMobile,
+            usePortrait: true,
+            startPage: 0,
+            drawShadow: true,
+            flippingTime: 600,
+            disableFlipByClick: false,
+            singlePageMode: isMobile
+        };
         
-        // Debug: log page count
-        console.log('Initialized flipbook with', pages.length, 'pages,', flipbook.querySelectorAll('.page').length, 'page elements');
-    }
-    
-    function initializePageFlip() {
-        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
-        
-        if (isMobile) {
-            // Mobile: Single page view with swipe gestures
-            initializeMobileFlip(pageElements);
-        } else {
-            // Desktop: Book-style flip
-            initializeDesktopFlip(pageElements);
-        }
-    }
-    
-    function initializeMobileFlip(pageElements) {
-        // Initialize pages for mobile - start with book "closed" (only cover visible)
-        pageElements.forEach((page, i) => {
-            if (i === 0) {
-                // Cover is active and visible - ensure it's shown
-                page.classList.add('active');
-                page.style.display = 'block';
-                page.style.opacity = '1';
-                page.style.transform = 'rotateY(0deg)';
-                page.style.zIndex = '1000';
-                page.style.visibility = 'visible';
-            } else {
-                // All other pages are hidden (book is closed) - force hide
-                page.classList.remove('active', 'next', 'prev', 'flipping');
-                page.style.display = 'none';
-                page.style.opacity = '0';
-                page.style.visibility = 'hidden';
-            }
-        });
-        
-        // Show next page when user clicks next (opens the book)
-        if (pageElements.length > 1) {
-            pageElements[1].classList.add('next');
-        }
-        
-        function showPage(index, direction = 'next') {
-            if (isFlipping || index < 0 || index >= pageElements.length) return;
-            isFlipping = true;
+        try {
+            pageFlipInstance = new St.PageFlip(flipbook, settings);
             
-            const prevIndex = currentPage;
-            const targetIndex = index;
+            // Load pages into stPageFlip
+            pageFlipInstance.loadFromHTML(pageElements);
             
-            console.log('Mobile showPage:', prevIndex, '->', targetIndex, direction);
-            
-            // Ensure both pages are visible for animation
-            pageElements[prevIndex].style.display = 'block';
-            pageElements[prevIndex].style.visibility = 'visible';
-            pageElements[targetIndex].style.display = 'block';
-            pageElements[targetIndex].style.visibility = 'visible';
-            
-            // Set initial transform for target page (start from opposite side)
-            if (direction === 'next') {
-                pageElements[targetIndex].style.transform = 'rotateY(180deg)';
-            } else {
-                pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
-            }
-            pageElements[targetIndex].style.opacity = '0';
-            pageElements[targetIndex].style.zIndex = pageElements[prevIndex].style.zIndex || '1000';
-            
-            // Force reflow to ensure initial state is rendered
-            void pageElements[targetIndex].offsetHeight;
-            
-            // Update classes
-            pageElements[prevIndex].classList.remove('active', 'next', 'prev');
-            pageElements[targetIndex].classList.remove('active', 'next', 'prev');
-            pageElements[prevIndex].classList.add('flipping');
-            pageElements[targetIndex].classList.add('flipping');
-            
-            // Animate: flip current page out, new page in
-            requestAnimationFrame(() => {
-                if (direction === 'next') {
-                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-                    pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-                } else {
-                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
-                    pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-                }
-                pageElements[prevIndex].style.opacity = '0';
-                pageElements[targetIndex].style.opacity = '1';
-                pageElements[targetIndex].style.zIndex = String(2000 + targetIndex);
-                pageElements[targetIndex].classList.add('active');
+            // Event listeners
+            pageFlipInstance.on('flip', (e) => {
+                const currentPage = e.data;
+                updateControls(currentPage);
             });
             
-            currentPage = targetIndex;
+            // Navigation buttons
+            prevBtn.addEventListener('click', () => {
+                if (pageFlipInstance) {
+                    pageFlipInstance.flipPrev();
+                }
+            });
             
-            setTimeout(() => {
-                pageElements[prevIndex].classList.remove('flipping', 'active');
-                pageElements[targetIndex].classList.remove('flipping');
-                pageElements[prevIndex].style.transform = 'rotateY(0deg)';
-                pageElements[prevIndex].style.visibility = 'hidden';
-                pageElements[prevIndex].style.display = 'none';
-                pageElements[prevIndex].style.opacity = '0';
-                
-                // Hide pages that are more than 1 away from current
-                pageElements.forEach((page, i) => {
-                    if (Math.abs(i - targetIndex) > 1) {
-                        page.style.display = 'none';
-                        page.style.visibility = 'hidden';
+            nextBtn.addEventListener('click', () => {
+                if (pageFlipInstance) {
+                    pageFlipInstance.flipNext();
+                }
+            });
+            
+            // Cover click to open
+            if (coverPage) {
+                coverPage.addEventListener('click', () => {
+                    if (pageFlipInstance && pageFlipInstance.getCurrentPageIndex() === 0) {
+                        pageFlipInstance.flipNext();
                     }
                 });
-                isFlipping = false;
-                updateControls();
-                console.log('Mobile flip complete, now on page', currentPage);
-            }, 600);
-        }
-        
-        // Touch/swipe handlers
-        flipbook.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-        
-        flipbook.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            handleSwipe();
-        }, { passive: true });
-        
-        function handleSwipe() {
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const minSwipeDistance = 50;
-            
-            // Only handle horizontal swipes (ignore vertical scrolling)
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                if (deltaX > 0 && currentPage > 0) {
-                    // Swipe right - previous page
-                    showPage(currentPage - 1, 'prev');
-                } else if (deltaX < 0 && currentPage < pageElements.length - 1) {
-                    // Swipe left - next page
-                    showPage(currentPage + 1, 'next');
-                }
-            }
-        }
-        
-        // Store specialized function reference (don't overwrite window.flipToPage)
-        mobileShowPage = showPage;
-    }
-    
-    function initializeDesktopFlip(pageElements) {
-        // Helper to determine if page is left (even) or right (odd)
-        function isLeftPage(index) {
-            return index % 2 === 0;
-        }
-        
-        function positionPage(page, index) {
-            // Position pages side by side
-            if (isLeftPage(index)) {
-                page.classList.add('left-page');
-                page.classList.remove('right-page');
-                page.style.width = '50%';
-                page.style.left = '0';
-                page.style.transformOrigin = 'right center';
-            } else {
-                page.classList.add('right-page');
-                page.classList.remove('left-page');
-                page.style.width = '50%';
-                page.style.left = '50%';
-                page.style.transformOrigin = 'left center';
-            }
-        }
-        
-        // Desktop: Book-style flip - start with book "closed" (only cover visible on right)
-        pageElements.forEach((page, i) => {
-            positionPage(page, i);
-            if (i === 0) {
-                // Cover is visible on right side (book closed) - ensure it's shown
-                page.style.zIndex = '2000';
-                page.style.transform = 'rotateY(0deg)';
-                page.style.opacity = '1';
-                page.style.display = 'block';
-                page.style.visibility = 'visible';
-                page.classList.add('active');
-            } else {
-                // All other pages are hidden (book is closed) - force hide
-                page.style.zIndex = String(1000 + i);
-                page.style.transform = 'rotateY(0deg)';
-                page.style.opacity = '0';
-                page.style.display = 'none';
-                page.style.visibility = 'hidden';
-                page.classList.remove('active');
-            }
-        });
-        
-        function showPage(index, direction = 'next') {
-            if (isFlipping || index < 0 || index >= pageElements.length) return;
-            isFlipping = true;
-            
-            const targetIndex = index;
-            const prevIndex = currentPage;
-            
-            console.log('Desktop showPage:', prevIndex, '->', targetIndex, direction);
-            
-            // Position cover correctly (it's always on the right)
-            if (prevIndex === 0) {
-                positionPage(pageElements[0], 0);
             }
             
-            // Position target page
-            positionPage(pageElements[targetIndex], targetIndex);
-            
-            // Show both pages in the spread
-            const leftPageIndex = isLeftPage(targetIndex) ? targetIndex : targetIndex - 1;
-            const rightPageIndex = isLeftPage(targetIndex) ? targetIndex + 1 : targetIndex;
-            
-            // Ensure both pages in spread are visible
-            if (leftPageIndex >= 0 && leftPageIndex < pageElements.length) {
-                pageElements[leftPageIndex].style.display = 'block';
-                pageElements[leftPageIndex].style.visibility = 'visible';
-                positionPage(pageElements[leftPageIndex], leftPageIndex);
-            }
-            if (rightPageIndex >= 0 && rightPageIndex < pageElements.length) {
-                pageElements[rightPageIndex].style.display = 'block';
-                pageElements[rightPageIndex].style.visibility = 'visible';
-                positionPage(pageElements[rightPageIndex], rightPageIndex);
-            }
-            
-            // Ensure target page is visible
-            pageElements[targetIndex].style.display = 'block';
-            pageElements[targetIndex].style.visibility = 'visible';
-            
-            // Set initial transform for target page (start from opposite side)
-            if (direction === 'next') {
-                pageElements[targetIndex].style.transform = 'rotateY(180deg)';
-            } else {
-                pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
-            }
-            pageElements[targetIndex].style.opacity = '0';
-            
-            // Update z-index for proper stacking
-            const baseZ = 2000;
-            pageElements[targetIndex].style.zIndex = String(baseZ + targetIndex + 1);
-            if (leftPageIndex >= 0) {
-                pageElements[leftPageIndex].style.zIndex = String(baseZ + leftPageIndex);
-            }
-            if (rightPageIndex < pageElements.length) {
-                pageElements[rightPageIndex].style.zIndex = String(baseZ + rightPageIndex);
-            }
-            
-            // Force reflow to ensure initial state is rendered
-            void pageElements[targetIndex].offsetHeight;
-            
-            // Animate: flip current page out, new page in
-            requestAnimationFrame(() => {
-                // Animate current page out
-                if (direction === 'next') {
-                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-                } else {
-                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
-                }
-                pageElements[prevIndex].style.opacity = '0';
-                
-                // Animate next page in
-                pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-                pageElements[targetIndex].style.opacity = '1';
-                pageElements[targetIndex].classList.add('active');
-            });
-            
-            currentPage = targetIndex;
-            
-            setTimeout(() => {
-                // Reset previous page position and hide if not in current spread
-                pageElements[prevIndex].style.transform = 'rotateY(0deg)';
-                pageElements[prevIndex].classList.remove('active');
-                
-                // Hide pages not in current spread
-                pageElements.forEach((page, i) => {
-                    const inSpread = (i === leftPageIndex || i === rightPageIndex);
-                    if (!inSpread && i !== 0) { // Keep cover visible if we're past it
-                        page.style.display = 'none';
-                        page.style.visibility = 'hidden';
+            // Table of Contents navigation
+            document.addEventListener('click', (e) => {
+                if (e.target.matches('.toc a[data-page]')) {
+                    e.preventDefault();
+                    const targetPage = parseInt(e.target.getAttribute('data-page'));
+                    if (pageFlipInstance) {
+                        pageFlipInstance.flip(targetPage);
                     }
-                });
-                
-                isFlipping = false;
-                updateControls();
-                console.log('Desktop flip complete, now on page', currentPage);
-            }, 600);
-        }
-        
-        // Store specialized function reference (don't overwrite window.flipToPage)
-        desktopShowPage = showPage;
-    }
-    
-    function setupSimpleNavigation() {
-        // Fallback implementation without page-flip animation
-        const pageElements = flipbook.querySelectorAll('.page');
-        
-        function showPage(index) {
-            pageElements.forEach((page, i) => {
-                page.style.display = i === index ? 'block' : 'none';
-            });
-            currentPage = index;
-            updateControls();
-        }
-        
-        showPage(0);
-    }
-    
-    function updateControls() {
-        currentPageSpan.textContent = currentPage + 1;
-        prevBtn.disabled = currentPage === 0;
-        nextBtn.disabled = currentPage === pages.length - 1;
-    }
-    
-    // Navigation buttons
-    prevBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const pageElements = flipbook.querySelectorAll('.page');
-        if (currentPage > 0 && !isFlipping && pageElements.length > 0) {
-            window.flipToPage(currentPage - 1, 'prev');
-        }
-    });
-    
-    nextBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const pageElements = flipbook.querySelectorAll('.page');
-        const totalPages = pageElements.length;
-        
-        if (currentPage < totalPages - 1 && !isFlipping && totalPages > 0) {
-            window.flipToPage(currentPage + 1, 'next');
-        }
-    });
-    
-    // Also allow clicking on cover to open the book
-    document.addEventListener('click', (e) => {
-        const coverPage = document.getElementById('cover-page');
-        const pageElements = flipbook.querySelectorAll('.page');
-        if (coverPage && coverPage.contains(e.target) && currentPage === 0 && pageElements.length > 1 && !isFlipping) {
-            // Clicking cover opens to first page
-            window.flipToPage(1, 'next');
-        }
-    });
-    
-    // Ensure flipToPage is available even if pages haven't loaded
-    window.flipToPage = window.flipToPage || function(index, direction) {
-        const pageElements = flipbook.querySelectorAll('.page');
-        if (index >= 0 && index < pageElements.length) {
-            pageElements.forEach((page, i) => {
-                if (i === index) {
-                    page.style.display = 'block';
-                    page.style.opacity = '1';
-                    page.style.zIndex = '1000';
-                } else {
-                    page.style.display = 'none';
-                    page.style.opacity = '0';
                 }
             });
-            currentPage = index;
-            updateControls();
-        }
-    };
-    
-    // Table of Contents navigation
-    document.addEventListener('click', (e) => {
-        if (e.target.matches('.toc a[data-page]')) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (isFlipping) return;
             
-            const targetPage = parseInt(e.target.getAttribute('data-page'));
-            const direction = targetPage > currentPage ? 'next' : 'prev';
-            window.flipToPage(targetPage, direction);
-        }
-    });
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (isFlipping) return;
-        
-        if (e.key === 'ArrowLeft' && currentPage > 0) {
-            window.flipToPage(currentPage - 1, 'prev');
-        } else if (e.key === 'ArrowRight' && currentPage < pages.length - 1) {
-            window.flipToPage(currentPage + 1, 'next');
-        }
-    });
-    
-    // Store reference to specialized showPage functions
-    let mobileShowPage = null;
-    let desktopShowPage = null;
-    
-    // Universal flip function that always works - delegates to specialized functions if available
-    function universalFlipToPage(index, direction) {
-        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
-        console.log('flipToPage called:', index, direction, 'total pages:', pageElements.length, 'current:', currentPage, 'isFlipping:', isFlipping);
-        
-        if (index < 0 || index >= pageElements.length) {
-            console.warn('Invalid page index:', index);
-            return;
-        }
-        
-        if (isFlipping) {
-            console.warn('Already flipping, ignoring');
-            return;
-        }
-        
-        // Use specialized function if available, otherwise use fallback
-        const specializedShowPage = isMobile ? mobileShowPage : desktopShowPage;
-        if (specializedShowPage) {
-            console.log('Using specialized showPage function');
-            specializedShowPage(index, direction);
-            return;
-        }
-        
-        // Fallback implementation
-        console.log('Using fallback flip implementation');
-        isFlipping = true;
-        const prevIndex = currentPage;
-        const targetIndex = index;
-        
-        // Ensure target page exists
-        if (!pageElements[targetIndex]) {
-            console.error('Target page does not exist:', targetIndex);
-            isFlipping = false;
-            return;
-        }
-        
-        // Ensure both pages are visible for animation
-        if (pageElements[prevIndex]) {
-            pageElements[prevIndex].style.display = 'block';
-            pageElements[prevIndex].style.visibility = 'visible';
-        }
-        pageElements[targetIndex].style.display = 'block';
-        pageElements[targetIndex].style.visibility = 'visible';
-        
-        // Set initial transform for target page
-        if (direction === 'next') {
-            pageElements[targetIndex].style.transform = 'rotateY(180deg)';
-        } else {
-            pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
-        }
-        pageElements[targetIndex].style.opacity = '0';
-        pageElements[targetIndex].style.zIndex = '1001';
-        
-        // Force reflow
-        void pageElements[targetIndex].offsetHeight;
-        
-        // Animate
-        requestAnimationFrame(() => {
-            // Hide current page with animation
-            if (pageElements[prevIndex]) {
-                if (direction === 'next') {
-                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-                } else {
-                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (pageFlipInstance) {
+                    if (e.key === 'ArrowLeft') {
+                        pageFlipInstance.flipPrev();
+                    } else if (e.key === 'ArrowRight') {
+                        pageFlipInstance.flipNext();
+                    }
                 }
-                pageElements[prevIndex].style.opacity = '0';
-                pageElements[prevIndex].classList.remove('active');
-            }
+            });
             
-            // Show target page
-            pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-            pageElements[targetIndex].style.opacity = '1';
-            pageElements[targetIndex].classList.add('active');
-        });
-        
-        currentPage = targetIndex;
-        
-        setTimeout(() => {
-            if (pageElements[prevIndex]) {
-                pageElements[prevIndex].style.display = 'none';
-                pageElements[prevIndex].style.visibility = 'hidden';
-                pageElements[prevIndex].style.transform = 'rotateY(0deg)';
-            }
-            isFlipping = false;
-            updateControls();
-            console.log('Fallback flip complete, now on page', currentPage);
-        }, 600);
+            // Update controls
+            updateControls(0);
+            totalPagesSpan.textContent = pageElements.length;
+            
+            console.log('stPageFlip initialized with', pageElements.length, 'pages');
+        } catch (error) {
+            console.error('Error initializing stPageFlip:', error);
+        }
     }
     
-    // Set up flipToPage immediately - this is the master function
-    window.flipToPage = universalFlipToPage;
-    
-    // Load pages on startup
-    loadPages().then(() => {
-        // After pages load, ensure flipToPage still works
-        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
-        if (pageElements.length > 0) {
-            console.log('Pages loaded, total:', pageElements.length);
-            // Ensure flipToPage is still set
-            if (!window.flipToPage) {
-                window.flipToPage = universalFlipToPage;
-            }
-            updateControls();
+    function updateControls(currentPageIndex = null) {
+        if (pageFlipInstance) {
+            const current = currentPageIndex !== null ? currentPageIndex : pageFlipInstance.getCurrentPageIndex();
+            currentPageSpan.textContent = current + 1;
+            prevBtn.disabled = current === 0;
+            nextBtn.disabled = current >= pages.length - 1;
         }
-    }).catch(err => {
-        console.error('Error loading pages:', err);
-        // Even if loading fails, ensure flipToPage works with what we have
-        if (!window.flipToPage) {
-            window.flipToPage = universalFlipToPage;
-        }
-    });
+    }
     
-    // Handle window resize (mobile/desktop switch)
+    // Handle window resize
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            const wasMobile = isMobile;
-            const nowMobile = isMobileDevice();
-            
-            if (wasMobile !== nowMobile) {
-                // Reload if switching between mobile/desktop
-                location.reload();
+            if (pageFlipInstance) {
+                const wasMobile = isMobile;
+                const nowMobile = isMobileDevice();
+                
+                if (wasMobile !== nowMobile) {
+                    // Reload if switching between mobile/desktop
+                    location.reload();
+                } else {
+                    // Update size
+                    pageFlipInstance.update();
+                }
             }
         }, 250);
     });
     
-    // Add swipe hint for mobile (first visit)
-    if (isMobile && !sessionStorage.getItem('swipeHintShown')) {
-        const swipeHint = document.createElement('div');
-        swipeHint.className = 'swipe-hint';
-        swipeHint.textContent = '← Swipe to turn pages →';
-        document.body.appendChild(swipeHint);
-        
-        setTimeout(() => {
-            swipeHint.remove();
-            sessionStorage.setItem('swipeHintShown', 'true');
-        }, 3000);
-    }
+    // Load pages on startup
+    loadPages();
 });
