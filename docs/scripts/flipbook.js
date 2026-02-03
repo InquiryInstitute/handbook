@@ -206,7 +206,15 @@ document.addEventListener('DOMContentLoaded', function() {
             pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
         }
         
-        return pages.length > 0 ? pages : [{ html: `<div class="page"><h1>${title}</h1><p>Content loading...</p></div>`, type: 'content' }];
+        // Filter out empty pages
+        const validPages = pages.filter(page => {
+            const temp = document.createElement('div');
+            temp.innerHTML = page.html;
+            const text = temp.textContent || '';
+            return text.trim().length > 0;
+        });
+        
+        return validPages.length > 0 ? validPages : [{ html: `<div class="page"><h1>${title}</h1><p>Content loading...</p></div>`, type: 'content' }];
     }
     
     function initializeFlipbook() {
@@ -232,8 +240,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = page.html;
                 const content = tempDiv.firstElementChild || tempDiv;
+                
+                // Ensure page has content
+                if (!content.innerHTML || content.innerHTML.trim().length === 0) {
+                    console.warn('Empty page detected at index', index, 'skipping');
+                    return; // Skip empty pages
+                }
+                
                 pageElement.innerHTML = content.innerHTML;
                 pageElement.className = content.className || pageElement.className;
+                
+                // Ensure page has background
+                if (!pageElement.style.background && !pageElement.classList.contains('cover')) {
+                    pageElement.style.background = '#faf8f3';
+                }
             }
             
             // Immediately hide all pages except cover (book starts closed)
