@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const imagePaths = [];
         for (let i = 0; i < 11; i++) {
             const pageNum = i.toString().padStart(3, '0');
-            imagePaths.push(`pages/images/page-${pageNum}.png`);
+            // Use absolute paths from root
+            imagePaths.push(`/handbook/pages/images/page-${pageNum}.png`);
         }
         return imagePaths;
     }
@@ -45,7 +46,10 @@ document.addEventListener('DOMContentLoaded', function() {
             drawShadow: true,
             flippingTime: 600,
             disableFlipByClick: false,
-            singlePageMode: isMobile
+            singlePageMode: isMobile,
+            // Ensure proper sizing for two-page spread
+            autoSize: false,
+            size: 'fixed'
         };
         
         try {
