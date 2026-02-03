@@ -481,16 +481,41 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         e.stopPropagation();
         if (currentPage > 0 && !isFlipping) {
-            window.flipToPage(currentPage - 1, 'prev');
+            if (window.flipToPage) {
+                window.flipToPage(currentPage - 1, 'prev');
+            } else {
+                // Fallback
+                const pageElements = flipbook.querySelectorAll('.page');
+                if (pageElements[currentPage - 1]) {
+                    pageElements[currentPage].style.display = 'none';
+                    pageElements[currentPage - 1].style.display = 'block';
+                    currentPage--;
+                    updateControls();
+                }
+            }
         }
     });
     
     nextBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (currentPage < pages.length - 1 && !isFlipping) {
-            // When clicking next from cover, "open" the book
-            window.flipToPage(currentPage + 1, 'next');
+        const pageElements = flipbook.querySelectorAll('.page');
+        const totalPages = Math.max(pages.length, pageElements.length);
+        
+        if (currentPage < totalPages - 1 && !isFlipping) {
+            if (window.flipToPage) {
+                window.flipToPage(currentPage + 1, 'next');
+            } else {
+                // Fallback - simple page show
+                if (pageElements[currentPage + 1]) {
+                    pageElements[currentPage].style.display = 'none';
+                    pageElements[currentPage].style.opacity = '0';
+                    pageElements[currentPage + 1].style.display = 'block';
+                    pageElements[currentPage + 1].style.opacity = '1';
+                    currentPage++;
+                    updateControls();
+                }
+            }
         }
     });
     
@@ -499,9 +524,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const coverPage = document.getElementById('cover-page');
         if (coverPage && coverPage.contains(e.target) && currentPage === 0 && pages.length > 1 && !isFlipping) {
             // Clicking cover opens to first page
-            window.flipToPage(1, 'next');
+            if (window.flipToPage) {
+                window.flipToPage(1, 'next');
+            } else {
+                // Fallback if flipToPage not ready
+                const pageElements = flipbook.querySelectorAll('.page');
+                if (pageElements.length > 1) {
+                    pageElements[0].style.display = 'none';
+                    pageElements[0].style.opacity = '0';
+                    pageElements[1].style.display = 'block';
+                    pageElements[1].style.opacity = '1';
+                    currentPage = 1;
+                    updateControls();
+                }
+            }
         }
     });
+    
+    // Ensure flipToPage is available even if pages haven't loaded
+    window.flipToPage = window.flipToPage || function(index, direction) {
+        const pageElements = flipbook.querySelectorAll('.page');
+        if (index >= 0 && index < pageElements.length) {
+            pageElements.forEach((page, i) => {
+                if (i === index) {
+                    page.style.display = 'block';
+                    page.style.opacity = '1';
+                    page.style.zIndex = '1000';
+                } else {
+                    page.style.display = 'none';
+                    page.style.opacity = '0';
+                }
+            });
+            currentPage = index;
+            updateControls();
+        }
+    };
     
     // Table of Contents navigation
     document.addEventListener('click', (e) => {
