@@ -495,19 +495,9 @@ document.addEventListener('DOMContentLoaded', function() {
     prevBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (currentPage > 0 && !isFlipping) {
-            if (window.flipToPage) {
-                window.flipToPage(currentPage - 1, 'prev');
-            } else {
-                // Fallback
-                const pageElements = flipbook.querySelectorAll('.page');
-                if (pageElements[currentPage - 1]) {
-                    pageElements[currentPage].style.display = 'none';
-                    pageElements[currentPage - 1].style.display = 'block';
-                    currentPage--;
-                    updateControls();
-                }
-            }
+        const pageElements = flipbook.querySelectorAll('.page');
+        if (currentPage > 0 && !isFlipping && pageElements.length > 0) {
+            window.flipToPage(currentPage - 1, 'prev');
         }
     });
     
@@ -515,44 +505,20 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         e.stopPropagation();
         const pageElements = flipbook.querySelectorAll('.page');
-        const totalPages = Math.max(pages.length, pageElements.length);
+        const totalPages = pageElements.length;
         
-        if (currentPage < totalPages - 1 && !isFlipping) {
-            if (window.flipToPage) {
-                window.flipToPage(currentPage + 1, 'next');
-            } else {
-                // Fallback - simple page show
-                if (pageElements[currentPage + 1]) {
-                    pageElements[currentPage].style.display = 'none';
-                    pageElements[currentPage].style.opacity = '0';
-                    pageElements[currentPage + 1].style.display = 'block';
-                    pageElements[currentPage + 1].style.opacity = '1';
-                    currentPage++;
-                    updateControls();
-                }
-            }
+        if (currentPage < totalPages - 1 && !isFlipping && totalPages > 0) {
+            window.flipToPage(currentPage + 1, 'next');
         }
     });
     
     // Also allow clicking on cover to open the book
     document.addEventListener('click', (e) => {
         const coverPage = document.getElementById('cover-page');
-        if (coverPage && coverPage.contains(e.target) && currentPage === 0 && pages.length > 1 && !isFlipping) {
+        const pageElements = flipbook.querySelectorAll('.page');
+        if (coverPage && coverPage.contains(e.target) && currentPage === 0 && pageElements.length > 1 && !isFlipping) {
             // Clicking cover opens to first page
-            if (window.flipToPage) {
-                window.flipToPage(1, 'next');
-            } else {
-                // Fallback if flipToPage not ready
-                const pageElements = flipbook.querySelectorAll('.page');
-                if (pageElements.length > 1) {
-                    pageElements[0].style.display = 'none';
-                    pageElements[0].style.opacity = '0';
-                    pageElements[1].style.display = 'block';
-                    pageElements[1].style.opacity = '1';
-                    currentPage = 1;
-                    updateControls();
-                }
-            }
+            window.flipToPage(1, 'next');
         }
     });
     
@@ -599,8 +565,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Create a simple flip function that works immediately
+    function simpleFlipToPage(index, direction) {
+        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
+        if (index < 0 || index >= pageElements.length || isFlipping) return;
+        
+        isFlipping = true;
+        const prevIndex = currentPage;
+        const targetIndex = index;
+        
+        // Show target page
+        pageElements[targetIndex].style.display = 'block';
+        pageElements[targetIndex].style.opacity = '1';
+        pageElements[targetIndex].style.visibility = 'visible';
+        pageElements[targetIndex].style.zIndex = '1000';
+        pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+        
+        // Hide current page with animation
+        if (direction === 'next') {
+            pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+        } else {
+            pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+        }
+        pageElements[prevIndex].style.opacity = '0';
+        
+        currentPage = targetIndex;
+        
+        setTimeout(() => {
+            pageElements[prevIndex].style.display = 'none';
+            pageElements[prevIndex].style.visibility = 'hidden';
+            pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+            isFlipping = false;
+            updateControls();
+        }, 600);
+    }
+    
+    // Set up flipToPage immediately
+    window.flipToPage = simpleFlipToPage;
+    
     // Load pages on startup
-    loadPages();
+    loadPages().then(() => {
+        // After pages load, update flipToPage to use the proper function
+        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
+        if (pageElements.length > 0) {
+            console.log('Pages loaded, total:', pageElements.length);
+            updateControls();
+        }
+    }).catch(err => {
+        console.error('Error loading pages:', err);
+    });
     
     // Handle window resize (mobile/desktop switch)
     let resizeTimeout;
