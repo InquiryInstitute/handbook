@@ -96,11 +96,9 @@ body {
         radial-gradient(circle at 80% 70%, rgba(101, 67, 33, 0.2) 0%, transparent 50%) !important;
 }
 
-/* Hide all pages by default - only cover should be visible initially */
-.page:not(.cover):not(.active) {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
+/* stPageFlip manages visibility, but ensure pages can be shown */
+.page {
+    /* Let stPageFlip control visibility */
 }
 
 /* Ensure cover is visible by default */

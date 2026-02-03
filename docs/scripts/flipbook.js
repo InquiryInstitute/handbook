@@ -254,6 +254,29 @@ document.addEventListener('DOMContentLoaded', function() {
             pageFlipInstance.on('flip', (e) => {
                 const currentPage = e.data;
                 updateControls(currentPage);
+                
+                // Ensure pages are visible after flip
+                setTimeout(() => {
+                    pageElements.forEach((page, index) => {
+                        const isCurrent = index === currentPage;
+                        const isNext = index === currentPage + 1;
+                        const isPrev = index === currentPage - 1;
+                        
+                        if (isCurrent || isNext || isPrev) {
+                            page.style.visibility = 'visible';
+                            page.style.opacity = '1';
+                        }
+                    });
+                }, 100);
+            });
+            
+            // Initial page visibility
+            pageFlipInstance.on('init', () => {
+                // Make sure first page (cover) is visible
+                if (pageElements[0]) {
+                    pageElements[0].style.visibility = 'visible';
+                    pageElements[0].style.opacity = '1';
+                }
             });
             
             // Navigation buttons
