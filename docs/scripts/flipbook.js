@@ -46,9 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
             drawShadow: true,
             flippingTime: 600,
             disableFlipByClick: false,
-            // Since images are already 1600px spreads, use single page mode
-            // but we'll show them as spreads visually
-            singlePageMode: true, // Each image is already a spread
+            // Images are 800px single pages - stPageFlip will show two side by side
+            singlePageMode: isMobile
             autoSize: false,
             size: 'fixed'
         };
