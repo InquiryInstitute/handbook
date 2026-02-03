@@ -311,55 +311,57 @@ document.addEventListener('DOMContentLoaded', function() {
             const prevIndex = currentPage;
             const targetIndex = index;
             
-            // Update classes
-            pageElements[prevIndex].classList.remove('active', 'next', 'prev');
-            pageElements[targetIndex].classList.remove('active', 'next', 'prev');
+            console.log('Mobile showPage:', prevIndex, '->', targetIndex, direction);
             
-            // Add flipping animation
-            pageElements[prevIndex].classList.add('flipping');
-            pageElements[targetIndex].classList.add('flipping');
-            
-            // Show target page
+            // Ensure both pages are visible for animation
+            pageElements[prevIndex].style.display = 'block';
+            pageElements[prevIndex].style.visibility = 'visible';
             pageElements[targetIndex].style.display = 'block';
             pageElements[targetIndex].style.visibility = 'visible';
             
+            // Set initial transform for target page (start from opposite side)
             if (direction === 'next') {
-                pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-                pageElements[prevIndex].style.opacity = '0';
+                pageElements[targetIndex].style.transform = 'rotateY(180deg)';
             } else {
-                pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
+            }
+            pageElements[targetIndex].style.opacity = '0';
+            pageElements[targetIndex].style.zIndex = pageElements[prevIndex].style.zIndex || '1000';
+            
+            // Force reflow to ensure initial state is rendered
+            void pageElements[targetIndex].offsetHeight;
+            
+            // Update classes
+            pageElements[prevIndex].classList.remove('active', 'next', 'prev');
+            pageElements[targetIndex].classList.remove('active', 'next', 'prev');
+            pageElements[prevIndex].classList.add('flipping');
+            pageElements[targetIndex].classList.add('flipping');
+            
+            // Animate: flip current page out, new page in
+            requestAnimationFrame(() => {
+                if (direction === 'next') {
+                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+                    pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+                } else {
+                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                    pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+                }
                 pageElements[prevIndex].style.opacity = '0';
-            }
-            
-            pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-            pageElements[targetIndex].style.opacity = '1';
-            pageElements[targetIndex].classList.add('active');
-            
-            // Update adjacent pages (only show if we're navigating to them)
-            if (targetIndex > 0 && Math.abs(targetIndex - (targetIndex - 1)) <= 1) {
-                pageElements[targetIndex - 1].classList.remove('active', 'next', 'prev');
-                pageElements[targetIndex - 1].classList.add('prev');
-                pageElements[targetIndex - 1].style.display = 'block';
-                pageElements[targetIndex - 1].style.visibility = 'visible';
-            }
-            if (targetIndex < pageElements.length - 1 && Math.abs(targetIndex - (targetIndex + 1)) <= 1) {
-                pageElements[targetIndex + 1].classList.remove('active', 'next', 'prev');
-                pageElements[targetIndex + 1].classList.add('next');
-                pageElements[targetIndex + 1].style.display = 'block';
-                pageElements[targetIndex + 1].style.visibility = 'visible';
-            }
+                pageElements[targetIndex].style.opacity = '1';
+                pageElements[targetIndex].style.zIndex = '1001';
+                pageElements[targetIndex].classList.add('active');
+            });
             
             currentPage = targetIndex;
             
             setTimeout(() => {
-                pageElements[prevIndex].classList.remove('flipping');
+                pageElements[prevIndex].classList.remove('flipping', 'active');
                 pageElements[targetIndex].classList.remove('flipping');
                 pageElements[prevIndex].style.transform = 'rotateY(0deg)';
-                // Hide previous page if not adjacent
-                if (Math.abs(prevIndex - targetIndex) > 1) {
-                    pageElements[prevIndex].style.display = 'none';
-                    pageElements[prevIndex].style.visibility = 'hidden';
-                }
+                pageElements[prevIndex].style.visibility = 'hidden';
+                pageElements[prevIndex].style.display = 'none';
+                pageElements[prevIndex].style.opacity = '0';
+                
                 // Hide pages that are more than 1 away from current
                 pageElements.forEach((page, i) => {
                     if (Math.abs(i - targetIndex) > 1) {
@@ -369,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 isFlipping = false;
                 updateControls();
+                console.log('Mobile flip complete, now on page', currentPage);
             }, 600);
         }
         
@@ -433,36 +436,58 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetIndex = index;
             const prevIndex = currentPage;
             
-            // Show target page
+            console.log('Desktop showPage:', prevIndex, '->', targetIndex, direction);
+            
+            // Ensure both pages are visible for animation
+            pageElements[prevIndex].style.display = 'block';
+            pageElements[prevIndex].style.visibility = 'visible';
             pageElements[targetIndex].style.display = 'block';
             pageElements[targetIndex].style.visibility = 'visible';
             
-            // Update z-index for proper stacking
-            pageElements[targetIndex].style.zIndex = pages.length + 1;
-            pageElements[prevIndex].style.zIndex = pages.length - prevIndex;
-            
-            // Animate current page out
+            // Set initial transform for target page (start from opposite side)
             if (direction === 'next') {
-                pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+                pageElements[targetIndex].style.transform = 'rotateY(180deg)';
             } else {
-                pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
             }
-            pageElements[prevIndex].style.opacity = '0';
+            pageElements[targetIndex].style.opacity = '0';
             
-            // Animate next page in
-            pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-            pageElements[targetIndex].style.opacity = '1';
+            // Update z-index for proper stacking
+            pageElements[targetIndex].style.zIndex = String(pages.length + 1);
+            pageElements[prevIndex].style.zIndex = String(pages.length - prevIndex);
+            
+            // Force reflow to ensure initial state is rendered
+            void pageElements[targetIndex].offsetHeight;
+            
+            // Animate: flip current page out, new page in
+            requestAnimationFrame(() => {
+                // Animate current page out
+                if (direction === 'next') {
+                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+                } else {
+                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                }
+                pageElements[prevIndex].style.opacity = '0';
+                
+                // Animate next page in
+                pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+                pageElements[targetIndex].style.opacity = '1';
+                pageElements[targetIndex].classList.add('active');
+            });
             
             currentPage = targetIndex;
             
             setTimeout(() => {
                 // Reset previous page position and hide if not adjacent
                 pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+                pageElements[prevIndex].classList.remove('active');
                 if (Math.abs(prevIndex - targetIndex) > 1) {
                     pageElements[prevIndex].style.display = 'none';
+                    pageElements[prevIndex].style.visibility = 'hidden';
                 }
                 isFlipping = false;
                 updateControls();
+                console.log('Desktop flip complete, now on page', currentPage);
             }, 600);
         }
         
@@ -605,24 +630,44 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Show target page
-        pageElements[targetIndex].style.display = 'block';
-        pageElements[targetIndex].style.opacity = '1';
-        pageElements[targetIndex].style.visibility = 'visible';
-        pageElements[targetIndex].style.zIndex = '1000';
-        pageElements[targetIndex].style.transform = 'rotateY(0deg)';
-        pageElements[targetIndex].classList.add('active');
-        
-        // Hide current page with animation
+        // Ensure both pages are visible for animation
         if (pageElements[prevIndex]) {
-            if (direction === 'next') {
-                pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-            } else {
-                pageElements[prevIndex].style.transform = 'rotateY(180deg)';
-            }
-            pageElements[prevIndex].style.opacity = '0';
-            pageElements[prevIndex].classList.remove('active');
+            pageElements[prevIndex].style.display = 'block';
+            pageElements[prevIndex].style.visibility = 'visible';
         }
+        pageElements[targetIndex].style.display = 'block';
+        pageElements[targetIndex].style.visibility = 'visible';
+        
+        // Set initial transform for target page
+        if (direction === 'next') {
+            pageElements[targetIndex].style.transform = 'rotateY(180deg)';
+        } else {
+            pageElements[targetIndex].style.transform = 'rotateY(-180deg)';
+        }
+        pageElements[targetIndex].style.opacity = '0';
+        pageElements[targetIndex].style.zIndex = '1001';
+        
+        // Force reflow
+        void pageElements[targetIndex].offsetHeight;
+        
+        // Animate
+        requestAnimationFrame(() => {
+            // Hide current page with animation
+            if (pageElements[prevIndex]) {
+                if (direction === 'next') {
+                    pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+                } else {
+                    pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                }
+                pageElements[prevIndex].style.opacity = '0';
+                pageElements[prevIndex].classList.remove('active');
+            }
+            
+            // Show target page
+            pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+            pageElements[targetIndex].style.opacity = '1';
+            pageElements[targetIndex].classList.add('active');
+        });
         
         currentPage = targetIndex;
         
@@ -634,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             isFlipping = false;
             updateControls();
-            console.log('Flip complete, now on page', currentPage);
+            console.log('Fallback flip complete, now on page', currentPage);
         }, 600);
     }
     
