@@ -250,15 +250,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Load pages into stPageFlip
             pageFlipInstance.loadFromHTML(pageElements);
             
-            // For desktop, ensure two-page spread is working
+            // For desktop, ensure two-page spread is working correctly
             if (!isMobile && pageFlipInstance) {
-                // Force update to ensure two-page layout
+                // Force update and ensure proper rendering
                 setTimeout(() => {
                     pageFlipInstance.update();
-                    // Check if pages are showing correctly
+                    
+                    // Ensure pages are positioned correctly for two-page spread
+                    // stPageFlip should handle this, but we can verify
                     const currentIndex = pageFlipInstance.getCurrentPageIndex();
                     console.log('Current page index:', currentIndex, 'Total pages:', pageElements.length);
-                }, 300);
+                    console.log('Book width:', bookWidth, 'Single page mode:', isMobile);
+                    
+                    // Check page positions
+                    pageElements.forEach((page, i) => {
+                        const rect = page.getBoundingClientRect();
+                        console.log(`Page ${i} position:`, {
+                            left: rect.left,
+                            width: rect.width,
+                            classes: page.className
+                        });
+                    });
+                }, 500);
             }
             
             // Event listeners
