@@ -51,6 +51,14 @@ body {
     transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.3s;
 }
 
+/* Ensure cover is visible by default */
+.page.cover.active {
+    display: block !important;
+    opacity: 1 !important;
+    z-index: 1000 !important;
+    transform: rotateY(0deg) !important;
+}
+
 .page.cover {
     cursor: pointer;
 }

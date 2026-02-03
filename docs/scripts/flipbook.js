@@ -212,15 +212,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeMobileFlip(pageElements) {
         // Initialize pages for mobile - start with book "closed" (only cover visible)
         pageElements.forEach((page, i) => {
-            page.classList.remove('active', 'next', 'prev', 'flipping');
             if (i === 0) {
-                // Cover is active and visible
+                // Cover is active and visible - ensure it's shown
                 page.classList.add('active');
                 page.style.display = 'block';
                 page.style.opacity = '1';
                 page.style.transform = 'rotateY(0deg)';
+                page.style.zIndex = '1000';
             } else {
                 // All other pages are hidden (book is closed)
+                page.classList.remove('active', 'next', 'prev', 'flipping');
                 page.style.display = 'none';
                 page.style.opacity = '0';
             }
@@ -324,17 +325,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeDesktopFlip(pageElements) {
         // Desktop: Book-style flip - start with book "closed" (only cover visible)
         pageElements.forEach((page, i) => {
-            page.style.zIndex = pages.length - i;
             if (i === 0) {
-                // Cover is visible (book closed)
+                // Cover is visible (book closed) - ensure it's shown
+                page.style.zIndex = pages.length + 1000;
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '1';
                 page.style.display = 'block';
+                page.classList.add('active');
             } else {
                 // All other pages are hidden (book is closed)
+                page.style.zIndex = pages.length - i;
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '0';
                 page.style.display = 'none';
+                page.classList.remove('active');
             }
         });
         
