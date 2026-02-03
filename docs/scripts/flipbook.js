@@ -256,22 +256,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateControls(currentPage);
             });
             
-            // Ensure cover starts on right side for desktop
+            // Ensure cover starts on right side for desktop and is only half width
             if (!isMobile) {
                 pageFlipInstance.on('init', () => {
-                    // For desktop, we want the cover to appear on the right initially
-                    // stPageFlip should handle this, but we can ensure it
                     const coverPage = pageElements[0];
                     if (coverPage) {
-                        // Wait a bit for stPageFlip to initialize
+                        // Wait for stPageFlip to initialize
                         setTimeout(() => {
-                            // Check if cover needs to be positioned on right
-                            const hasRightClass = coverPage.classList.contains('stf__item--right');
-                            if (!hasRightClass) {
-                                // Force right positioning for cover
-                                coverPage.classList.add('stf__item--right');
-                            }
-                        }, 100);
+                            // Force cover to be right half only
+                            coverPage.style.width = '50%';
+                            coverPage.style.left = '50%';
+                            coverPage.style.right = 'auto';
+                            coverPage.classList.add('stf__item--right');
+                        }, 200);
+                    }
+                });
+                
+                // Also ensure cover stays on right after any flip
+                pageFlipInstance.on('flip', (e) => {
+                    const currentPage = e.data;
+                    if (currentPage === 0) {
+                        // If we're back on cover, ensure it's right half
+                        const coverPage = pageElements[0];
+                        if (coverPage) {
+                            setTimeout(() => {
+                                coverPage.style.width = '50%';
+                                coverPage.style.left = '50%';
+                                coverPage.style.right = 'auto';
+                            }, 100);
+                        }
                     }
                 });
             }

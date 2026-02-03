@@ -45,6 +45,13 @@ body {
         /* stPageFlip will manage the layout */
     }
     
+    /* Ensure cover is only on right half, not full width */
+    .page.cover.stf__item {
+        width: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+    }
+    
     /* stPageFlip adds --right class to right pages */
     .page.stf__item--right {
         /* Right page positioning handled by stPageFlip */
