@@ -415,35 +415,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         function positionPage(page, index) {
-            if (index === 0 && currentPage === 0) {
-                // Cover is full width when closed
-                page.classList.remove('left-page', 'right-page', 'opened');
-                page.style.width = '100%';
+            // Position pages side by side
+            if (isLeftPage(index)) {
+                page.classList.add('left-page');
+                page.classList.remove('right-page');
+                page.style.width = '50%';
                 page.style.left = '0';
-                page.style.transformOrigin = 'left center';
+                page.style.transformOrigin = 'right center';
             } else {
-                // Position pages side by side
-                if (isLeftPage(index)) {
-                    page.classList.add('left-page');
-                    page.classList.remove('right-page');
-                    page.style.width = '50%';
-                    page.style.left = '0';
-                    page.style.transformOrigin = 'right center';
-                } else {
-                    page.classList.add('right-page');
-                    page.classList.remove('left-page');
-                    page.style.width = '50%';
-                    page.style.left = '50%';
-                    page.style.transformOrigin = 'left center';
-                }
+                page.classList.add('right-page');
+                page.classList.remove('left-page');
+                page.style.width = '50%';
+                page.style.left = '50%';
+                page.style.transformOrigin = 'left center';
             }
         }
         
-        // Desktop: Book-style flip - start with book "closed" (only cover visible)
+        // Desktop: Book-style flip - start with book "closed" (only cover visible on right)
         pageElements.forEach((page, i) => {
             positionPage(page, i);
             if (i === 0) {
-                // Cover is visible (book closed) - ensure it's shown
+                // Cover is visible on right side (book closed) - ensure it's shown
                 page.style.zIndex = '2000';
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '1';
@@ -470,16 +462,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Desktop showPage:', prevIndex, '->', targetIndex, direction);
             
-            // Special handling: opening the book (cover to first page)
-            if (prevIndex === 0 && targetIndex === 1) {
-                // Cover becomes left page, page 1 becomes right page
+            // Position cover correctly (it's always on the right)
+            if (prevIndex === 0) {
                 positionPage(pageElements[0], 0);
-                pageElements[0].classList.add('opened');
-                positionPage(pageElements[1], 1);
-                
-                pageElements[0].style.width = '50%';
-                pageElements[0].style.zIndex = '2000';
-                pageElements[1].style.zIndex = '2001';
             }
             
             // Position target page
