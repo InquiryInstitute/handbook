@@ -187,6 +187,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 pageElement.className = content.className || pageElement.className;
             }
             
+            // Immediately hide all pages except cover (book starts closed)
+            if (index > 0) {
+                pageElement.style.display = 'none';
+                pageElement.style.opacity = '0';
+            }
+            
             flipbook.appendChild(pageElement);
         });
         
@@ -219,11 +225,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 page.style.opacity = '1';
                 page.style.transform = 'rotateY(0deg)';
                 page.style.zIndex = '1000';
+                page.style.visibility = 'visible';
             } else {
-                // All other pages are hidden (book is closed)
+                // All other pages are hidden (book is closed) - force hide
                 page.classList.remove('active', 'next', 'prev', 'flipping');
                 page.style.display = 'none';
                 page.style.opacity = '0';
+                page.style.visibility = 'hidden';
             }
         });
         
@@ -249,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show target page
             pageElements[targetIndex].style.display = 'block';
+            pageElements[targetIndex].style.visibility = 'visible';
             
             if (direction === 'next') {
                 pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
@@ -262,16 +271,18 @@ document.addEventListener('DOMContentLoaded', function() {
             pageElements[targetIndex].style.opacity = '1';
             pageElements[targetIndex].classList.add('active');
             
-            // Update adjacent pages
-            if (targetIndex > 0) {
+            // Update adjacent pages (only show if we're navigating to them)
+            if (targetIndex > 0 && Math.abs(targetIndex - (targetIndex - 1)) <= 1) {
                 pageElements[targetIndex - 1].classList.remove('active', 'next', 'prev');
                 pageElements[targetIndex - 1].classList.add('prev');
                 pageElements[targetIndex - 1].style.display = 'block';
+                pageElements[targetIndex - 1].style.visibility = 'visible';
             }
-            if (targetIndex < pageElements.length - 1) {
+            if (targetIndex < pageElements.length - 1 && Math.abs(targetIndex - (targetIndex + 1)) <= 1) {
                 pageElements[targetIndex + 1].classList.remove('active', 'next', 'prev');
                 pageElements[targetIndex + 1].classList.add('next');
                 pageElements[targetIndex + 1].style.display = 'block';
+                pageElements[targetIndex + 1].style.visibility = 'visible';
             }
             
             currentPage = targetIndex;
@@ -283,7 +294,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Hide previous page if not adjacent
                 if (Math.abs(prevIndex - targetIndex) > 1) {
                     pageElements[prevIndex].style.display = 'none';
+                    pageElements[prevIndex].style.visibility = 'hidden';
                 }
+                // Hide pages that are more than 1 away from current
+                pageElements.forEach((page, i) => {
+                    if (Math.abs(i - targetIndex) > 1) {
+                        page.style.display = 'none';
+                        page.style.visibility = 'hidden';
+                    }
+                });
                 isFlipping = false;
                 updateControls();
             }, 600);
@@ -333,11 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 page.style.display = 'block';
                 page.classList.add('active');
             } else {
-                // All other pages are hidden (book is closed)
+                // All other pages are hidden (book is closed) - force hide
                 page.style.zIndex = pages.length - i;
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '0';
                 page.style.display = 'none';
+                page.style.visibility = 'hidden';
                 page.classList.remove('active');
             }
         });
@@ -351,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show target page
             pageElements[targetIndex].style.display = 'block';
+            pageElements[targetIndex].style.visibility = 'visible';
             
             // Update z-index for proper stacking
             pageElements[targetIndex].style.zIndex = pages.length + 1;
