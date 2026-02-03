@@ -189,8 +189,25 @@ document.addEventListener('DOMContentLoaded', function() {
             pageElements.push(pageElement);
         });
         
-        // Initialize display
-        showPages(0);
+        // Initialize display - cover starts on right side
+        if (!isMobile) {
+            // Desktop: position cover on right
+            if (coverPage) {
+                coverPage.style.left = '800px';
+                coverPage.style.width = '800px';
+                coverPage.style.display = 'block';
+                coverPage.style.opacity = '1';
+            }
+        } else {
+            // Mobile: cover full width
+            if (coverPage) {
+                coverPage.style.left = '0';
+                coverPage.style.width = '100%';
+                coverPage.style.display = 'block';
+                coverPage.style.opacity = '1';
+            }
+        }
+        
         totalPagesSpan.textContent = pageElements.length;
         updateControls();
         
@@ -258,23 +275,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             // Desktop: two-page spread
-            const leftIndex = index % 2 === 0 ? index : index - 1;
-            const rightIndex = index % 2 === 0 ? index + 1 : index;
-            
-            // Left page
-            if (pageElements[leftIndex]) {
-                pageElements[leftIndex].style.display = 'block';
-                pageElements[leftIndex].style.opacity = '1';
-                pageElements[leftIndex].style.left = '0';
-                pageElements[leftIndex].style.width = '800px';
-            }
-            
-            // Right page
-            if (pageElements[rightIndex]) {
-                pageElements[rightIndex].style.display = 'block';
-                pageElements[rightIndex].style.opacity = '1';
-                pageElements[rightIndex].style.left = '800px';
-                pageElements[rightIndex].style.width = '800px';
+            // For cover (index 0), show only on right
+            if (index === 0) {
+                if (pageElements[0]) {
+                    pageElements[0].style.display = 'block';
+                    pageElements[0].style.opacity = '1';
+                    pageElements[0].style.left = '800px';
+                    pageElements[0].style.width = '800px';
+                }
+            } else {
+                // For other pages, show left and right
+                const leftIndex = index % 2 === 0 ? index - 1 : index - 1;
+                const rightIndex = index;
+                
+                // Left page (if exists and not cover)
+                if (leftIndex >= 0 && pageElements[leftIndex] && leftIndex !== 0) {
+                    pageElements[leftIndex].style.display = 'block';
+                    pageElements[leftIndex].style.opacity = '1';
+                    pageElements[leftIndex].style.left = '0';
+                    pageElements[leftIndex].style.width = '800px';
+                }
+                
+                // Right page
+                if (pageElements[rightIndex]) {
+                    pageElements[rightIndex].style.display = 'block';
+                    pageElements[rightIndex].style.opacity = '1';
+                    pageElements[rightIndex].style.left = '800px';
+                    pageElements[rightIndex].style.width = '800px';
+                }
             }
         }
         
