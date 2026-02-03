@@ -55,6 +55,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const chapters = [
             { file: 'pages/chapters/00-front-matter/00-welcome-desk.html', title: 'The Welcome Desk' },
             { file: 'pages/chapters/01-jurisdiction/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority' },
+            { file: 'pages/chapters/02-faculty-identity/02-becoming-faculty.html', title: 'Becoming Faculty' },
+            { file: 'pages/chapters/02-faculty-identity/03-on-persona.html', title: 'On Persona' },
+            { file: 'pages/chapters/03-teaching/04-teaching-at-institute.html', title: 'Teaching at Inquiry Institute' },
+            { file: 'pages/chapters/03-teaching/05-course-construction.html', title: 'Course Construction' },
+            { file: 'pages/chapters/03-teaching/06-exams-questions-maieutics.html', title: 'Exams, Questions, & Maieutics' },
+            { file: 'pages/chapters/04-writing/07-writing-commonplace.html', title: 'Writing in the Commonplace' },
+            { file: 'pages/chapters/04-writing/08-encyclopaedia-contributions.html', title: 'Encyclopaedia Contributions' },
         ];
         
         for (const chapter of chapters) {
