@@ -401,8 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Store navigation functions
-        window.flipToPage = (index, direction) => showPage(index, direction);
+        // Store specialized function reference (don't overwrite window.flipToPage)
+        mobileShowPage = showPage;
     }
     
     function initializeDesktopFlip(pageElements) {
@@ -466,8 +466,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 600);
         }
         
-        // Store navigation functions
-        window.flipToPage = (index, direction) => showPage(index, direction);
+        // Store specialized function reference (don't overwrite window.flipToPage)
+        desktopShowPage = showPage;
     }
     
     function setupSimpleNavigation() {
@@ -565,7 +565,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Universal flip function that always works
+    // Store reference to specialized showPage functions
+    let mobileShowPage = null;
+    let desktopShowPage = null;
+    
+    // Universal flip function that always works - delegates to specialized functions if available
     function universalFlipToPage(index, direction) {
         const pageElements = Array.from(flipbook.querySelectorAll('.page'));
         console.log('flipToPage called:', index, direction, 'total pages:', pageElements.length, 'current:', currentPage, 'isFlipping:', isFlipping);
@@ -580,11 +584,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Use specialized function if available, otherwise use fallback
+        const specializedShowPage = isMobile ? mobileShowPage : desktopShowPage;
+        if (specializedShowPage) {
+            console.log('Using specialized showPage function');
+            specializedShowPage(index, direction);
+            return;
+        }
+        
+        // Fallback implementation
+        console.log('Using fallback flip implementation');
         isFlipping = true;
         const prevIndex = currentPage;
         const targetIndex = index;
-        
-        console.log('Flipping from', prevIndex, 'to', targetIndex);
         
         // Ensure target page exists
         if (!pageElements[targetIndex]) {
