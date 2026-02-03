@@ -252,24 +252,20 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // For desktop, ensure two-page spread is working correctly
             if (!isMobile && pageFlipInstance) {
-                // Force update and ensure proper rendering
+                // Wait for stPageFlip to fully initialize
                 setTimeout(() => {
+                    // Force update to recalculate layout
                     pageFlipInstance.update();
                     
-                    // Ensure pages are positioned correctly for two-page spread
-                    // stPageFlip should handle this, but we can verify
+                    // stPageFlip should automatically position pages for two-page spread
+                    // when singlePageMode is false, but we can verify
                     const currentIndex = pageFlipInstance.getCurrentPageIndex();
-                    console.log('Current page index:', currentIndex, 'Total pages:', pageElements.length);
-                    console.log('Book width:', bookWidth, 'Single page mode:', isMobile);
-                    
-                    // Check page positions
-                    pageElements.forEach((page, i) => {
-                        const rect = page.getBoundingClientRect();
-                        console.log(`Page ${i} position:`, {
-                            left: rect.left,
-                            width: rect.width,
-                            classes: page.className
-                        });
+                    console.log('stPageFlip initialized:', {
+                        currentPage: currentIndex,
+                        totalPages: pageElements.length,
+                        bookWidth: bookWidth,
+                        singlePageMode: isMobile,
+                        containerWidth: flipbook.offsetWidth
                     });
                 }, 500);
             }
