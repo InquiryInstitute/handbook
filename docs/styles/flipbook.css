@@ -111,71 +111,91 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 80px 60px;
+    padding: 60px 50px;
+}
+
+.cover-title-section {
+    text-align: center;
+    flex-shrink: 0;
+    margin-bottom: 20px;
+}
+
+.cover-prefix {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.1rem;
+    margin: 0 0 15px 0;
+    letter-spacing: 0.15em;
+    color: #c9c7c2;
+    text-transform: none;
+    font-weight: 400;
+}
+
+.page.cover h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 4.5rem;
+    margin: 0;
+    letter-spacing: 0.1em;
+    line-height: 1.1;
+    color: #e8e6e1;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    font-weight: 400;
+    text-transform: none;
+    text-align: center;
 }
 
 .cover-image {
     text-align: center;
-    margin-bottom: 40px;
-    flex-shrink: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    margin: 20px 0;
 }
 
 .cover-image img {
-    max-width: 280px;
-    max-height: 280px;
+    max-width: 400px;
+    max-height: 400px;
     width: auto;
     height: auto;
     opacity: 0.95;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
-.page.cover h1 {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 3.2rem;
-    margin: 0 0 20px 0;
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-    color: #e8e6e1;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-    font-weight: 400;
-    text-transform: none;
+.cover-footer {
     text-align: center;
-    flex-grow: 0;
+    flex-shrink: 0;
+    margin-top: 20px;
 }
 
 .page.cover .subtitle {
     font-family: 'Spectral SC', serif;
-    font-size: 1.2rem;
-    margin: 0 0 40px 0;
+    font-size: 1.1rem;
+    margin: 0 0 15px 0;
     font-weight: 400;
     letter-spacing: 0.12em;
     color: #c9c7c2;
     text-transform: none;
-    text-align: center;
 }
 
 .page.cover .institute-name {
     font-family: 'Spectral SC', serif;
-    font-size: 1.4rem;
-    margin: 0;
+    font-size: 1.3rem;
+    margin: 0 0 15px 0;
     letter-spacing: 0.1em;
     color: #d4d2cd;
     text-transform: none;
     font-weight: 400;
-    text-align: center;
-    flex-grow: 0;
 }
 
 .page.cover .tagline {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-style: italic;
-    margin: 40px 0 0 0;
+    margin: 0;
     color: #a8a6a1;
     line-height: 1.6;
     font-family: 'EB Garamond', serif;
     text-transform: none;
-    text-align: center;
-    flex-grow: 0;
 }
 
 .page.toc {
@@ -417,37 +437,40 @@ body {
     }
     
     .cover-content {
-        padding: 40px 20px;
+        padding: 30px 20px;
     }
     
-    .cover-image {
-        margin-bottom: 20px;
-    }
-    
-    .cover-image img {
-        max-width: 180px;
-        max-height: 180px;
+    .cover-prefix {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
     }
     
     .page.cover h1 {
-        font-size: 1.8rem;
-        line-height: 1.2;
-        margin: 0 0 15px 0;
+        font-size: 2.5rem;
+        line-height: 1.1;
+    }
+    
+    .cover-image {
+        margin: 15px 0;
+    }
+    
+    .cover-image img {
+        max-width: 250px;
+        max-height: 250px;
     }
     
     .page.cover .subtitle {
-        font-size: 0.95rem;
-        margin: 0 0 25px 0;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
     }
     
     .page.cover .institute-name {
         font-size: 1rem;
-        margin: 0;
+        margin-bottom: 10px;
     }
     
     .page.cover .tagline {
-        font-size: 0.85rem;
-        margin: 25px 0 0 0;
+        font-size: 0.8rem;
     }
     
     .page h1 {
