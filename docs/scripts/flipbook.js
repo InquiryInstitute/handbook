@@ -173,28 +173,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeFlipbook() {
-        // Clear flipbook container (except cover)
-        const coverPage = document.getElementById('cover-page');
-        const existingPages = Array.from(flipbook.querySelectorAll('.page:not(#cover-page)'));
-        existingPages.forEach(page => page.remove());
+        // Clear flipbook container completely - stPageFlip will manage all pages
+        flipbook.innerHTML = '';
         
         // Create page elements for stPageFlip
         const pageElements = [];
         
-        // Add cover if it exists
-        if (coverPage) {
-            pageElements.push(coverPage);
-        }
-        
-        // Create other pages
+        // Create all pages (including cover)
         pages.forEach((page, index) => {
-            // Skip cover if it already exists
-            if (index === 0 && coverPage) {
-                return;
-            }
-            
             const pageElement = document.createElement('div');
             pageElement.className = `page ${page.type}`;
+            if (index === 0) {
+                pageElement.id = 'cover-page';
+            }
             pageElement.setAttribute('data-density', 'hard');
             
             // Create new element from HTML
@@ -208,14 +199,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return; // Skip empty pages
             }
             
-            pageElement.innerHTML = content.innerHTML;
-            pageElement.className = content.className || pageElement.className;
+            // Extract innerHTML from content (remove wrapper div if present)
+            if (content.classList.contains('page')) {
+                pageElement.innerHTML = content.innerHTML;
+                // Preserve classes from content
+                Array.from(content.classList).forEach(cls => {
+                    if (cls !== 'page') {
+                        pageElement.classList.add(cls);
+                    }
+                });
+            } else {
+                pageElement.innerHTML = content.innerHTML;
+            }
             
             // Ensure page has background
-            if (!pageElement.style.background && !pageElement.classList.contains('cover')) {
+            if (!pageElement.classList.contains('cover')) {
                 pageElement.style.background = '#faf8f3';
             }
             
+            // Append to flipbook (stPageFlip will manage them)
             flipbook.appendChild(pageElement);
             pageElements.push(pageElement);
         });
@@ -232,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
             minHeight: 400,
             maxHeight: 1500,
             maxShadowOpacity: 0.5,
-            showCover: true,
+            showCover: false, // We'll handle cover positioning manually
             mobileScrollSupport: isMobile,
             usePortrait: true,
             startPage: 0,
@@ -268,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Cover click to open
+            const coverPage = pageElements[0];
             if (coverPage) {
                 coverPage.addEventListener('click', () => {
                     if (pageFlipInstance && pageFlipInstance.getCurrentPageIndex() === 0) {
