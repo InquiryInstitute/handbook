@@ -179,51 +179,63 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create page elements for stPageFlip
         const pageElements = [];
         
-        // Create all pages (including cover)
-        pages.forEach((page, index) => {
-            const pageElement = document.createElement('div');
-            pageElement.className = `page ${page.type}`;
-            if (index === 0) {
-                pageElement.id = 'cover-page';
-            }
-            pageElement.setAttribute('data-density', 'hard');
-            
-            // Create new element from HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = page.html;
-            const content = tempDiv.firstElementChild || tempDiv;
-            
-            // Ensure page has content
-            if (!content.innerHTML || content.innerHTML.trim().length === 0) {
-                console.warn('Empty page detected at index', index, 'skipping');
-                return; // Skip empty pages
-            }
-            
-            // Extract innerHTML from content (remove wrapper div if present)
-            if (content.classList.contains('page')) {
-                pageElement.innerHTML = content.innerHTML;
-                // Preserve classes from content
-                Array.from(content.classList).forEach(cls => {
-                    if (cls !== 'page') {
-                        pageElement.classList.add(cls);
-                    }
-                });
-            } else {
-                pageElement.innerHTML = content.innerHTML;
-            }
-            
-            // Ensure page has background
-            if (!pageElement.classList.contains('cover')) {
-                pageElement.style.background = '#faf8f3';
-            }
-            
-            // Append to flipbook (stPageFlip will manage them)
-            flipbook.appendChild(pageElement);
-            pageElements.push(pageElement);
-        });
+            // Create all pages (including cover)
+            pages.forEach((page, index) => {
+                const pageElement = document.createElement('div');
+                pageElement.className = `page ${page.type}`;
+                if (index === 0) {
+                    pageElement.id = 'cover-page';
+                }
+                pageElement.setAttribute('data-density', 'hard');
+                
+                // Set page width - each page should be half the book width on desktop
+                if (!isMobile) {
+                    pageElement.style.width = '800px'; // Half of 1600px
+                    pageElement.style.height = '1000px';
+                } else {
+                    pageElement.style.width = '800px';
+                    pageElement.style.height = '1000px';
+                }
+                
+                // Create new element from HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = page.html;
+                const content = tempDiv.firstElementChild || tempDiv;
+                
+                // Ensure page has content
+                if (!content.innerHTML || content.innerHTML.trim().length === 0) {
+                    console.warn('Empty page detected at index', index, 'skipping');
+                    return; // Skip empty pages
+                }
+                
+                // Extract innerHTML from content (remove wrapper div if present)
+                if (content.classList.contains('page')) {
+                    pageElement.innerHTML = content.innerHTML;
+                    // Preserve classes from content
+                    Array.from(content.classList).forEach(cls => {
+                        if (cls !== 'page') {
+                            pageElement.classList.add(cls);
+                        }
+                    });
+                } else {
+                    pageElement.innerHTML = content.innerHTML;
+                }
+                
+                // Ensure page has background
+                if (!pageElement.classList.contains('cover')) {
+                    pageElement.style.background = '#faf8f3';
+                }
+                
+                // Append to flipbook (stPageFlip will manage them)
+                flipbook.appendChild(pageElement);
+                pageElements.push(pageElement);
+            });
         
         // Initialize stPageFlip
-        const bookWidth = isMobile ? 800 : 1600; // Single page on mobile, two pages on desktop
+        // For desktop two-page spread: each page is 800px, total book is 1600px
+        // For mobile: single page is 800px
+        const singlePageWidth = 800;
+        const bookWidth = isMobile ? singlePageWidth : singlePageWidth * 2; // 1600 for desktop spread
         const bookHeight = 1000;
         
         const settings = {
