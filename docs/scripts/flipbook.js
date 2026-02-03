@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 pageElements[prevIndex].style.opacity = '0';
                 pageElements[targetIndex].style.opacity = '1';
-                pageElements[targetIndex].style.zIndex = '1001';
+                pageElements[targetIndex].style.zIndex = String(2000 + targetIndex);
                 pageElements[targetIndex].classList.add('active');
             });
             
@@ -413,14 +413,15 @@ document.addEventListener('DOMContentLoaded', function() {
         pageElements.forEach((page, i) => {
             if (i === 0) {
                 // Cover is visible (book closed) - ensure it's shown
-                page.style.zIndex = pages.length + 1000;
+                page.style.zIndex = '2000';
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '1';
                 page.style.display = 'block';
+                page.style.visibility = 'visible';
                 page.classList.add('active');
             } else {
                 // All other pages are hidden (book is closed) - force hide
-                page.style.zIndex = pages.length - i;
+                page.style.zIndex = String(1000 + i);
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '0';
                 page.style.display = 'none';
@@ -452,9 +453,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             pageElements[targetIndex].style.opacity = '0';
             
-            // Update z-index for proper stacking
-            pageElements[targetIndex].style.zIndex = String(pages.length + 1);
-            pageElements[prevIndex].style.zIndex = String(pages.length - prevIndex);
+            // Update z-index for proper stacking - ensure target is always on top
+            // Use high z-index values to ensure pages appear above container
+            const baseZ = 2000;
+            pageElements[targetIndex].style.zIndex = String(baseZ + targetIndex + 1);
+            pageElements[prevIndex].style.zIndex = String(baseZ + prevIndex);
             
             // Force reflow to ensure initial state is rendered
             void pageElements[targetIndex].offsetHeight;

@@ -35,6 +35,8 @@ body {
     position: relative;
     perspective: 2000px;
     background: #1a1a1a;
+    overflow: visible;
+    z-index: 1;
 }
 
 .page {
@@ -45,6 +47,8 @@ body {
     color: #2c2c2c;
     overflow: hidden;
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     transform-origin: left center;
@@ -52,6 +56,7 @@ body {
     backface-visibility: hidden;
     transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
     will-change: transform, opacity;
+    z-index: 10;
 }
 
 /* Hide all pages by default - only cover should be visible initially */
@@ -65,8 +70,9 @@ body {
 .page.cover.active {
     display: block !important;
     opacity: 1 !important;
-    z-index: 1000 !important;
+    z-index: 2000 !important;
     transform: rotateY(0deg) !important;
+    visibility: visible !important;
 }
 
 .page.cover {
@@ -340,7 +346,7 @@ body {
     background: rgba(0, 0, 0, 0.7);
     padding: 10px 20px;
     border-radius: 25px;
-    z-index: 1000;
+    z-index: 10000;
 }
 
 #controls button {
