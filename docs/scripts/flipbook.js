@@ -51,31 +51,31 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Could not load TOC:', error);
         }
         
-        // Load chapters from markdown (convert to HTML)
+        // Load chapters from HTML files
         const chapters = [
-            { file: 'chapters/00-welcome-desk.html', title: 'The Welcome Desk', markdown: '../chapters/00-front-matter/00-welcome-desk.md' },
-            { file: 'chapters/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority', markdown: '../chapters/01-jurisdiction/01-jurisdiction-authority.md' },
+            { file: 'pages/chapters/00-front-matter/00-welcome-desk.html', title: 'The Welcome Desk' },
+            { file: 'pages/chapters/01-jurisdiction/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority' },
         ];
         
         for (const chapter of chapters) {
             try {
-                // Try HTML first (from pages folder)
-                let response = await fetch(`pages/${chapter.file}`);
+                const response = await fetch(chapter.file);
                 if (response.ok) {
                     const html = await response.text();
-                    const chapterPages = splitIntoPages(html, chapter.title);
-                    pages.push(...chapterPages);
-                } else {
-                    // Fallback: try markdown (from chapters folder)
-                    response = await fetch(chapter.markdown);
-                    if (response.ok) {
-                        const markdown = await response.text();
-                        const html = markdownToHtml(markdown, chapter.title);
-                        const chapterPages = splitIntoPages(html, chapter.title);
+                    // Extract content from the page wrapper
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const pageContent = tempDiv.querySelector('.page');
+                    if (pageContent) {
+                        const chapterPages = splitIntoPages(pageContent.innerHTML, chapter.title);
                         pages.push(...chapterPages);
                     } else {
-                        console.warn(`Could not load ${chapter.file} or ${chapter.markdown}`);
+                        // If no .page wrapper, use the HTML directly
+                        const chapterPages = splitIntoPages(html, chapter.title);
+                        pages.push(...chapterPages);
                     }
+                } else {
+                    console.warn(`Could not load ${chapter.file}: ${response.status}`);
                 }
             } catch (error) {
                 console.warn(`Error loading ${chapter.file}:`, error);
@@ -126,25 +126,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function splitIntoPages(html, title) {
-        // Simple page splitting - split by headings or after ~800 words
+        // Simple page splitting - split by headings or after ~600 words
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
+        // Extract content from page wrapper if it exists
+        let contentElements = Array.from(tempDiv.children);
+        if (contentElements.length === 1 && contentElements[0].classList.contains('page')) {
+            contentElements = Array.from(contentElements[0].children);
+        }
+        
         const pages = [];
-        let currentPageContent = `<div class="page"><h1>${title}</h1>`;
+        let currentPageContent = '';
         let wordCount = 0;
-        const wordsPerPage = 800;
+        const wordsPerPage = 600; // Reduced for better page breaks
         
-        const elements = Array.from(tempDiv.children);
+        // Check if title is already in content
+        let hasTitle = false;
+        for (const el of contentElements) {
+            if (el.tagName === 'H1' && el.textContent.includes(title)) {
+                hasTitle = true;
+                break;
+            }
+        }
         
-        for (const element of elements) {
-            const text = element.textContent || '';
-            const words = text.split(/\s+/).length;
+        if (!hasTitle) {
+            currentPageContent = `<h1>${title}</h1>`;
+        }
+        
+        for (const element of contentElements) {
+            // Skip duplicate title
+            if (element.tagName === 'H1' && element.textContent.includes(title) && hasTitle) {
+                continue;
+            }
             
-            if (wordCount + words > wordsPerPage && wordCount > 0) {
-                currentPageContent += '</div>';
-                pages.push({ html: currentPageContent, type: 'content' });
-                currentPageContent = '<div class="page">';
+            const text = element.textContent || '';
+            const words = text.split(/\s+/).filter(w => w.length > 0).length;
+            
+            // Split on major headings (h2) if we're getting long
+            if (wordCount > 0 && (wordCount + words > wordsPerPage || (element.tagName === 'H2' && wordCount > 400))) {
+                pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
+                currentPageContent = '';
                 wordCount = 0;
             }
             
@@ -152,12 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
             wordCount += words;
         }
         
-        if (currentPageContent !== '<div class="page">') {
-            currentPageContent += '</div>';
-            pages.push({ html: currentPageContent, type: 'content' });
+        if (currentPageContent.trim()) {
+            pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
         }
         
-        return pages;
+        return pages.length > 0 ? pages : [{ html: `<div class="page"><h1>${title}</h1><p>Content loading...</p></div>`, type: 'content' }];
     }
     
     function initializeFlipbook() {
