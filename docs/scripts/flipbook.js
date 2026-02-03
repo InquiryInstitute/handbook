@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
             flippingTime: 600,
             disableFlipByClick: false,
             // Images are 800px single pages - stPageFlip will show two side by side
-            singlePageMode: isMobile
+            singlePageMode: isMobile,
             autoSize: false,
             size: 'fixed'
         };
