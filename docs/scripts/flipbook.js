@@ -1,5 +1,5 @@
 // Handbook Flipbook Implementation
-// Uses stPageFlip library for page-flip animation
+// Simple, working two-page spread flipbook
 
 document.addEventListener('DOMContentLoaded', function() {
     const flipbook = document.getElementById('flipbook');
@@ -9,31 +9,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPagesSpan = document.getElementById('total-pages');
     
     // Detect mobile
-    function isMobileDevice() {
-        return window.innerWidth <= 768;
-    }
+    const isMobile = window.innerWidth <= 768;
     
-    const isMobile = isMobileDevice();
-    
-    // Page data - will be populated from chapters
+    // Page data
     const pages = [];
-    let pageFlipInstance = null;
+    let currentPageIndex = 0;
+    let isFlipping = false;
     
     // Load pages
     async function loadPages() {
-        // Cover is already in the DOM, add it to pages array
+        // Cover is already in DOM
         const coverPage = document.getElementById('cover-page');
         if (coverPage) {
             pages.push({ html: coverPage.outerHTML, type: 'cover', element: coverPage });
-        } else {
-            // Fallback: load cover via fetch
-            try {
-                const coverResponse = await fetch('pages/cover.html');
-                const coverHtml = await coverResponse.text();
-                pages.push({ html: coverHtml, type: 'cover' });
-            } catch (error) {
-                console.warn('Could not load cover:', error);
-            }
         }
         
         // Table of Contents
@@ -45,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Could not load TOC:', error);
         }
         
-        // Load chapters from HTML files
+        // Load chapters
         const chapters = [
             { file: 'pages/chapters/00-front-matter/00-welcome-desk.html', title: 'The Welcome Desk' },
             { file: 'pages/chapters/01-jurisdiction/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority' },
@@ -63,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(chapter.file);
                 if (response.ok) {
                     const html = await response.text();
-                    // Extract content from the page wrapper
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
                     const pageContent = tempDiv.querySelector('.page');
@@ -71,40 +58,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         const chapterPages = splitIntoPages(pageContent.innerHTML, chapter.title);
                         pages.push(...chapterPages);
                     } else {
-                        // If no .page wrapper, use the HTML directly
                         const chapterPages = splitIntoPages(html, chapter.title);
                         pages.push(...chapterPages);
                     }
-                } else {
-                    console.warn(`Could not load ${chapter.file}: ${response.status}`);
                 }
             } catch (error) {
                 console.warn(`Error loading ${chapter.file}:`, error);
             }
         }
         
-        // Initialize flipbook
         initializeFlipbook();
     }
     
     function splitIntoPages(html, title) {
-        // Split content to fit pages without scrolling - estimate based on character count
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
-        
-        // Extract content from page wrapper if it exists
         let contentElements = Array.from(tempDiv.children);
         if (contentElements.length === 1 && contentElements[0].classList.contains('page')) {
             contentElements = Array.from(contentElements[0].children);
         }
         
-        const pages = [];
+        const resultPages = [];
         let currentPageContent = '';
-        // Estimate: ~2000 characters per page (roughly 300-400 words, accounting for HTML)
         const charsPerPage = 2000;
         let currentChars = 0;
         
-        // Check if title is already in content
         let hasTitle = false;
         for (const el of contentElements) {
             if (el.tagName === 'H1' && el.textContent.includes(title)) {
@@ -115,11 +93,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!hasTitle) {
             currentPageContent = `<h1>${title}</h1>`;
-            currentChars += title.length + 10; // Rough estimate for h1 tag
+            currentChars += title.length + 10;
         }
         
         for (const element of contentElements) {
-            // Skip duplicate title
             if (element.tagName === 'H1' && element.textContent.includes(title) && hasTitle) {
                 continue;
             }
@@ -128,14 +105,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const elementChars = elementHTML.length;
             const textContent = element.textContent || '';
             
-            // Split on major headings (h2) if we're getting close to limit
             if (currentChars > 0 && (currentChars + elementChars > charsPerPage || (element.tagName === 'H2' && currentChars > charsPerPage * 0.7))) {
-                pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
+                resultPages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
                 currentPageContent = '';
                 currentChars = 0;
             }
             
-            // If a single element is too long, split it (for very long paragraphs)
             if (elementChars > charsPerPage && element.tagName === 'P') {
                 const text = textContent;
                 const words = text.split(/\s+/);
@@ -144,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0; i < words.length; i += wordsPerChunk) {
                     const chunk = words.slice(i, i + wordsPerChunk).join(' ');
                     if (currentChars + chunk.length > charsPerPage && currentChars > 0) {
-                        pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
+                        resultPages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
                         currentPageContent = '';
                         currentChars = 0;
                     }
@@ -158,255 +133,166 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (currentPageContent.trim()) {
-            pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
+            resultPages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
         }
         
-        // Filter out empty pages
-        const validPages = pages.filter(page => {
+        return resultPages.filter(page => {
             const temp = document.createElement('div');
             temp.innerHTML = page.html;
-            const text = temp.textContent || '';
-            return text.trim().length > 0;
+            return (temp.textContent || '').trim().length > 0;
         });
-        
-        return validPages.length > 0 ? validPages : [{ html: `<div class="page"><h1>${title}</h1><p>Content loading...</p></div>`, type: 'content' }];
     }
     
     function initializeFlipbook() {
-        // Clear flipbook container completely - stPageFlip will manage all pages
-        flipbook.innerHTML = '';
+        // Clear container except cover
+        const coverPage = document.getElementById('cover-page');
+        const existingPages = Array.from(flipbook.querySelectorAll('.page:not(#cover-page)'));
+        existingPages.forEach(page => page.remove());
         
-        // Create page elements for stPageFlip
+        // Create page elements
         const pageElements = [];
         
-            // Create all pages (including cover)
-            pages.forEach((page, index) => {
-                const pageElement = document.createElement('div');
-                pageElement.className = `page ${page.type}`;
-                if (index === 0) {
-                    pageElement.id = 'cover-page';
-                }
-                pageElement.setAttribute('data-density', 'hard');
-                
-                // Set page width - each page should be half the book width on desktop
-                if (!isMobile) {
-                    pageElement.style.width = '800px'; // Half of 1600px
-                    pageElement.style.height = '1000px';
-                } else {
-                    pageElement.style.width = '800px';
-                    pageElement.style.height = '1000px';
-                }
-                
-                // Create new element from HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = page.html;
-                const content = tempDiv.firstElementChild || tempDiv;
-                
-                // Ensure page has content
-                if (!content.innerHTML || content.innerHTML.trim().length === 0) {
-                    console.warn('Empty page detected at index', index, 'skipping');
-                    return; // Skip empty pages
-                }
-                
-                // Extract innerHTML from content (remove wrapper div if present)
-                if (content.classList.contains('page')) {
-                    pageElement.innerHTML = content.innerHTML;
-                    // Preserve classes from content
-                    Array.from(content.classList).forEach(cls => {
-                        if (cls !== 'page') {
-                            pageElement.classList.add(cls);
-                        }
-                    });
-                } else {
-                    pageElement.innerHTML = content.innerHTML;
-                }
-                
-                // Ensure page has background
-                if (!pageElement.classList.contains('cover')) {
-                    pageElement.style.background = '#faf8f3';
-                }
-                
-                // Append to flipbook (stPageFlip will manage them)
-                flipbook.appendChild(pageElement);
-                pageElements.push(pageElement);
-            });
-        
-        // Initialize stPageFlip
-        // For desktop two-page spread: each page is 800px, total book is 1600px
-        // For mobile: single page is 800px
-        const singlePageWidth = 800;
-        const bookWidth = isMobile ? singlePageWidth : singlePageWidth * 2; // 1600 for desktop spread
-        const bookHeight = 1000;
-        
-        const settings = {
-            width: bookWidth,
-            height: bookHeight,
-            minWidth: isMobile ? 300 : bookWidth,
-            maxWidth: isMobile ? 800 : bookWidth,
-            minHeight: 400,
-            maxHeight: 1500,
-            maxShadowOpacity: 0.5,
-            showCover: false, // We'll handle cover positioning manually
-            mobileScrollSupport: isMobile,
-            usePortrait: true,
-            startPage: 0,
-            drawShadow: true,
-            flippingTime: 600,
-            disableFlipByClick: false,
-            singlePageMode: isMobile, // false = two-page spread on desktop
-            autoSize: false,
-            size: 'fixed'
-        };
-        
-        try {
-            pageFlipInstance = new St.PageFlip(flipbook, settings);
-            
-            // Load pages into stPageFlip
-            pageFlipInstance.loadFromHTML(pageElements);
-            
-            // For desktop, ensure two-page spread is working correctly
-            if (!isMobile && pageFlipInstance) {
-                // Wait for stPageFlip to fully initialize
-                setTimeout(() => {
-                    // Force update to recalculate layout
-                    pageFlipInstance.update();
-                    
-                    // stPageFlip should automatically position pages for two-page spread
-                    // when singlePageMode is false, but we can verify
-                    const currentIndex = pageFlipInstance.getCurrentPageIndex();
-                    console.log('stPageFlip initialized:', {
-                        currentPage: currentIndex,
-                        totalPages: pageElements.length,
-                        bookWidth: bookWidth,
-                        singlePageMode: isMobile,
-                        containerWidth: flipbook.offsetWidth
-                    });
-                }, 500);
-            }
-            
-            // Event listeners
-            pageFlipInstance.on('flip', (e) => {
-                const currentPage = e.data;
-                updateControls(currentPage);
-            });
-            
-            // Ensure cover starts on right side for desktop and is only half width
-            if (!isMobile) {
-                pageFlipInstance.on('init', () => {
-                    const coverPage = pageElements[0];
-                    if (coverPage) {
-                        // Wait for stPageFlip to initialize
-                        setTimeout(() => {
-                            // Force cover to be right half only
-                            coverPage.style.width = '50%';
-                            coverPage.style.left = '50%';
-                            coverPage.style.right = 'auto';
-                            coverPage.classList.add('stf__item--right');
-                        }, 200);
-                    }
-                });
-                
-                // Also ensure cover stays on right after any flip
-                pageFlipInstance.on('flip', (e) => {
-                    const currentPage = e.data;
-                    if (currentPage === 0) {
-                        // If we're back on cover, ensure it's right half
-                        const coverPage = pageElements[0];
-                        if (coverPage) {
-                            setTimeout(() => {
-                                coverPage.style.width = '50%';
-                                coverPage.style.left = '50%';
-                                coverPage.style.right = 'auto';
-                            }, 100);
-                        }
-                    }
-                });
-            }
-            
-            // Navigation buttons
-            prevBtn.addEventListener('click', () => {
-                if (pageFlipInstance) {
-                    pageFlipInstance.flipPrev();
-                }
-            });
-            
-            nextBtn.addEventListener('click', () => {
-                if (pageFlipInstance) {
-                    pageFlipInstance.flipNext();
-                }
-            });
-            
-            // Cover click to open
-            const coverPage = pageElements[0];
-            if (coverPage) {
-                coverPage.addEventListener('click', () => {
-                    if (pageFlipInstance && pageFlipInstance.getCurrentPageIndex() === 0) {
-                        pageFlipInstance.flipNext();
-                    }
-                });
-            }
-            
-            // Table of Contents navigation
-            document.addEventListener('click', (e) => {
-                if (e.target.matches('.toc a[data-page]')) {
-                    e.preventDefault();
-                    const targetPage = parseInt(e.target.getAttribute('data-page'));
-                    if (pageFlipInstance) {
-                        pageFlipInstance.flip(targetPage);
-                    }
-                }
-            });
-            
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (pageFlipInstance) {
-                    if (e.key === 'ArrowLeft') {
-                        pageFlipInstance.flipPrev();
-                    } else if (e.key === 'ArrowRight') {
-                        pageFlipInstance.flipNext();
-                    }
-                }
-            });
-            
-            // Update controls
-            updateControls(0);
-            totalPagesSpan.textContent = pageElements.length;
-            
-            console.log('stPageFlip initialized with', pageElements.length, 'pages');
-        } catch (error) {
-            console.error('Error initializing stPageFlip:', error);
+        // Add cover
+        if (coverPage) {
+            pageElements.push(coverPage);
         }
+        
+        // Create other pages
+        pages.forEach((page, index) => {
+            if (index === 0 && coverPage) return;
+            
+            const pageElement = document.createElement('div');
+            pageElement.className = `page ${page.type}`;
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = page.html;
+            const content = tempDiv.firstElementChild || tempDiv;
+            
+            if (!content.innerHTML || content.innerHTML.trim().length === 0) {
+                return;
+            }
+            
+            if (content.classList.contains('page')) {
+                pageElement.innerHTML = content.innerHTML;
+                Array.from(content.classList).forEach(cls => {
+                    if (cls !== 'page') pageElement.classList.add(cls);
+                });
+            } else {
+                pageElement.innerHTML = content.innerHTML;
+            }
+            
+            if (!pageElement.classList.contains('cover')) {
+                pageElement.style.background = '#faf8f3';
+            }
+            
+            flipbook.appendChild(pageElement);
+            pageElements.push(pageElement);
+        });
+        
+        // Initialize display
+        showPages(0);
+        totalPagesSpan.textContent = pageElements.length;
+        updateControls();
+        
+        // Navigation
+        prevBtn.addEventListener('click', () => {
+            if (currentPageIndex > 0 && !isFlipping) {
+                showPages(currentPageIndex - 1);
+            }
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            if (currentPageIndex < pageElements.length - 1 && !isFlipping) {
+                showPages(currentPageIndex + 1);
+            }
+        });
+        
+        // Cover click
+        if (coverPage) {
+            coverPage.addEventListener('click', () => {
+                if (currentPageIndex === 0 && !isFlipping) {
+                    showPages(1);
+                }
+            });
+        }
+        
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentPageIndex > 0) {
+                showPages(currentPageIndex - 1);
+            } else if (e.key === 'ArrowRight' && currentPageIndex < pageElements.length - 1) {
+                showPages(currentPageIndex + 1);
+            }
+        });
+        
+        // TOC links
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.toc a[data-page]')) {
+                e.preventDefault();
+                const targetPage = parseInt(e.target.getAttribute('data-page'));
+                showPages(targetPage);
+            }
+        });
     }
     
-    function updateControls(currentPageIndex = null) {
-        if (pageFlipInstance) {
-            const current = currentPageIndex !== null ? currentPageIndex : pageFlipInstance.getCurrentPageIndex();
-            currentPageSpan.textContent = current + 1;
-            prevBtn.disabled = current === 0;
-            nextBtn.disabled = current >= pages.length - 1;
+    function showPages(index) {
+        if (isFlipping || index < 0 || index >= pages.length) return;
+        
+        isFlipping = true;
+        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
+        const prevIndex = currentPageIndex;
+        currentPageIndex = index;
+        
+        // Hide all pages
+        pageElements.forEach(page => {
+            page.style.display = 'none';
+            page.style.opacity = '0';
+        });
+        
+        // Show current pages (two-page spread on desktop)
+        if (isMobile) {
+            // Mobile: single page
+            if (pageElements[index]) {
+                pageElements[index].style.display = 'block';
+                pageElements[index].style.opacity = '1';
+            }
+        } else {
+            // Desktop: two-page spread
+            const leftIndex = index % 2 === 0 ? index : index - 1;
+            const rightIndex = index % 2 === 0 ? index + 1 : index;
+            
+            // Left page
+            if (pageElements[leftIndex]) {
+                pageElements[leftIndex].style.display = 'block';
+                pageElements[leftIndex].style.opacity = '1';
+                pageElements[leftIndex].style.left = '0';
+                pageElements[leftIndex].style.width = '800px';
+            }
+            
+            // Right page
+            if (pageElements[rightIndex]) {
+                pageElements[rightIndex].style.display = 'block';
+                pageElements[rightIndex].style.opacity = '1';
+                pageElements[rightIndex].style.left = '800px';
+                pageElements[rightIndex].style.width = '800px';
+            }
         }
+        
+        // Animate
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                isFlipping = false;
+                updateControls();
+            }, 300);
+        });
     }
     
-    // Handle window resize
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            if (pageFlipInstance) {
-                const wasMobile = isMobile;
-                const nowMobile = isMobileDevice();
-                
-                if (wasMobile !== nowMobile) {
-                    // Reload if switching between mobile/desktop
-                    location.reload();
-                } else {
-                    // Update size
-                    pageFlipInstance.update();
-                }
-            }
-        }, 250);
-    });
+    function updateControls() {
+        currentPageSpan.textContent = currentPageIndex + 1;
+        prevBtn.disabled = currentPageIndex === 0;
+        nextBtn.disabled = currentPageIndex >= pages.length - 1;
+    }
     
-    // Load pages on startup
+    // Load pages
     loadPages();
 });

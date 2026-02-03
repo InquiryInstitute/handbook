@@ -67,16 +67,9 @@ body {
     overflow: hidden;
     position: absolute;
     top: 0;
-    left: 0;
-    /* Each page should be 800px wide (half of 1600px book width) */
     width: 800px;
     height: 1000px;
-    transform-origin: left center;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
-    will-change: transform, opacity;
-    z-index: 10;
+    transition: opacity 0.3s ease;
     box-sizing: border-box;
 }
 
@@ -84,6 +77,7 @@ body {
 @media (max-width: 768px) {
     .page {
         width: 100%;
+        left: 0 !important;
     }
 }
 
