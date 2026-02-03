@@ -33,10 +33,25 @@ body {
     margin: 0 auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     position: relative;
-    perspective: 2000px;
     background: #1a1a1a;
-    overflow: visible;
+    overflow: hidden;
     z-index: 1;
+}
+
+/* Ensure stPageFlip canvas is properly sized */
+#flipbook canvas {
+    width: 1600px !important;
+    height: 1000px !important;
+}
+
+@media (min-width: 769px) {
+    #flipbook {
+        width: 1600px;
+    }
+    
+    #flipbook canvas {
+        width: 1600px !important;
+    }
 }
 
 /* Desktop: two-page spread - let stPageFlip handle positioning */

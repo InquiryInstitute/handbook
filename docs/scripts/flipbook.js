@@ -56,7 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
             pageFlipInstance = new St.PageFlip(flipbook, settings);
             
             // Load pages from images
+            // stPageFlip expects images to be sized correctly (800x1000 each for two-page spread)
             pageFlipInstance.loadFromImages(imagePaths);
+            
+            // Force update after loading to ensure proper layout
+            setTimeout(() => {
+                if (pageFlipInstance) {
+                    pageFlipInstance.update();
+                    console.log('stPageFlip updated, current page:', pageFlipInstance.getCurrentPageIndex());
+                }
+            }, 500);
             
             pageFlipInstance.on('flip', (e) => {
                 updateControls(e.data);
