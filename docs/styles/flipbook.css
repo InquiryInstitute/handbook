@@ -138,7 +138,7 @@ body {
 
 .page.cover h1 {
     font-family: 'Cinzel Decorative', serif;
-    font-size: 4.5rem;
+    font-size: 9rem;
     margin: 0;
     letter-spacing: 0.1em;
     line-height: 1.1;
@@ -454,7 +454,7 @@ body {
     }
     
     .page.cover h1 {
-        font-size: 2.5rem;
+        font-size: 5rem;
         line-height: 1.1;
     }
     
