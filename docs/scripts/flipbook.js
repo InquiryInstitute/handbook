@@ -565,14 +565,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Create a simple flip function that works immediately
-    function simpleFlipToPage(index, direction) {
+    // Universal flip function that always works
+    function universalFlipToPage(index, direction) {
         const pageElements = Array.from(flipbook.querySelectorAll('.page'));
-        if (index < 0 || index >= pageElements.length || isFlipping) return;
+        console.log('flipToPage called:', index, direction, 'total pages:', pageElements.length, 'current:', currentPage, 'isFlipping:', isFlipping);
+        
+        if (index < 0 || index >= pageElements.length) {
+            console.warn('Invalid page index:', index);
+            return;
+        }
+        
+        if (isFlipping) {
+            console.warn('Already flipping, ignoring');
+            return;
+        }
         
         isFlipping = true;
         const prevIndex = currentPage;
         const targetIndex = index;
+        
+        console.log('Flipping from', prevIndex, 'to', targetIndex);
+        
+        // Ensure target page exists
+        if (!pageElements[targetIndex]) {
+            console.error('Target page does not exist:', targetIndex);
+            isFlipping = false;
+            return;
+        }
         
         // Show target page
         pageElements[targetIndex].style.display = 'block';
@@ -580,39 +599,54 @@ document.addEventListener('DOMContentLoaded', function() {
         pageElements[targetIndex].style.visibility = 'visible';
         pageElements[targetIndex].style.zIndex = '1000';
         pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+        pageElements[targetIndex].classList.add('active');
         
         // Hide current page with animation
-        if (direction === 'next') {
-            pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
-        } else {
-            pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+        if (pageElements[prevIndex]) {
+            if (direction === 'next') {
+                pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+            } else {
+                pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+            }
+            pageElements[prevIndex].style.opacity = '0';
+            pageElements[prevIndex].classList.remove('active');
         }
-        pageElements[prevIndex].style.opacity = '0';
         
         currentPage = targetIndex;
         
         setTimeout(() => {
-            pageElements[prevIndex].style.display = 'none';
-            pageElements[prevIndex].style.visibility = 'hidden';
-            pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+            if (pageElements[prevIndex]) {
+                pageElements[prevIndex].style.display = 'none';
+                pageElements[prevIndex].style.visibility = 'hidden';
+                pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+            }
             isFlipping = false;
             updateControls();
+            console.log('Flip complete, now on page', currentPage);
         }, 600);
     }
     
-    // Set up flipToPage immediately
-    window.flipToPage = simpleFlipToPage;
+    // Set up flipToPage immediately - this is the master function
+    window.flipToPage = universalFlipToPage;
     
     // Load pages on startup
     loadPages().then(() => {
-        // After pages load, update flipToPage to use the proper function
+        // After pages load, ensure flipToPage still works
         const pageElements = Array.from(flipbook.querySelectorAll('.page'));
         if (pageElements.length > 0) {
             console.log('Pages loaded, total:', pageElements.length);
+            // Ensure flipToPage is still set
+            if (!window.flipToPage) {
+                window.flipToPage = universalFlipToPage;
+            }
             updateControls();
         }
     }).catch(err => {
         console.error('Error loading pages:', err);
+        // Even if loading fails, ensure flipToPage works with what we have
+        if (!window.flipToPage) {
+            window.flipToPage = universalFlipToPage;
+        }
     });
     
     // Handle window resize (mobile/desktop switch)
