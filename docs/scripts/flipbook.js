@@ -240,16 +240,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (index > 0) {
                 pageElement.style.display = 'none';
                 pageElement.style.opacity = '0';
+                pageElement.style.visibility = 'hidden';
             }
             
             flipbook.appendChild(pageElement);
         });
         
+        // Ensure TOC page exists if it wasn't created
+        if (pages.length > 1 && !flipbook.querySelector('.page.toc')) {
+            const tocPage = document.createElement('div');
+            tocPage.className = 'page toc';
+            tocPage.innerHTML = pages[1].html || '<div class="page toc"><h1>Table of Contents</h1><p>Loading...</p></div>';
+            tocPage.style.display = 'none';
+            tocPage.style.opacity = '0';
+            tocPage.style.visibility = 'hidden';
+            flipbook.appendChild(tocPage);
+        }
+        
         // Initialize page flip with CSS-based animation
         // Using a custom implementation for better control
         initializePageFlip();
-        totalPagesSpan.textContent = pages.length;
+        totalPagesSpan.textContent = Math.max(pages.length, flipbook.querySelectorAll('.page').length);
         updateControls();
+        
+        // Debug: log page count
+        console.log('Initialized flipbook with', pages.length, 'pages,', flipbook.querySelectorAll('.page').length, 'page elements');
     }
     
     function initializePageFlip() {
