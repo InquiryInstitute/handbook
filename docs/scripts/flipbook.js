@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const settings = {
             width: bookWidth,
             height: bookHeight,
-            minWidth: 300,
-            maxWidth: 2000,
+            minWidth: isMobile ? 300 : bookWidth,
+            maxWidth: isMobile ? 800 : bookWidth,
             minHeight: 400,
             maxHeight: 1500,
             maxShadowOpacity: 0.5,
@@ -241,7 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
             drawShadow: true,
             flippingTime: 600,
             disableFlipByClick: false,
-            singlePageMode: isMobile
+            singlePageMode: isMobile, // false = two-page spread on desktop
+            autoSize: false,
+            size: 'fixed'
         };
         
         try {
