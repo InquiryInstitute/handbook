@@ -111,6 +111,20 @@ body {
     padding: 20px;
 }
 
+.cover-image {
+    margin: 20px 0 30px 0;
+    text-align: center;
+}
+
+.cover-image img {
+    max-width: 200px;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
 .cover-ornament {
     width: 250px;
     height: 2px;
