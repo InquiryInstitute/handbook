@@ -12,5 +12,21 @@
     "faculty-guide"
   ],
   "author": "Inquiry Institute",
-  "license": "CC-BY-NC-4.0"
+  "license": "CC-BY-NC-4.0",
+  "main": "diagnose-handbook.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InquiryInstitute/handbook.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/InquiryInstitute/handbook/issues"
+  },
+  "homepage": "https://github.com/InquiryInstitute/handbook#readme",
+  "dependencies": {
+    "page-flip": "^2.0.7"
+  }
 }
