@@ -4,6 +4,9 @@
   "description": "Handbook for the Recently Deceased - A Practical Guide for Faculty of Inquiry Institute",
   "scripts": {
     "build:pages": "node scripts/build-pages.js",
+    "build:pdf": "node scripts/generate-pdf.js",
+    "build:images": "node scripts/render-html-pages.js",
+    "build:all": "npm run build:pages && npm run build:images",
     "dev": "python3 -m http.server 8000 --directory docs"
   },
   "keywords": [
@@ -12,24 +15,5 @@
     "faculty-guide"
   ],
   "author": "Inquiry Institute",
-  "license": "CC-BY-NC-4.0",
-  "main": "diagnose-handbook.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/InquiryInstitute/handbook.git"
-  },
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/InquiryInstitute/handbook/issues"
-  },
-  "homepage": "https://github.com/InquiryInstitute/handbook#readme",
-  "dependencies": {
-    "page-flip": "^2.0.7"
-  },
-  "devDependencies": {
-    "playwright": "^1.58.1"
-  }
+  "license": "CC-BY-NC-4.0"
 }
