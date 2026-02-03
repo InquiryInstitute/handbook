@@ -27,39 +27,102 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load pages
     async function loadPages() {
-        // Cover page
-        const coverResponse = await fetch('pages/cover.html');
-        const coverHtml = await coverResponse.text();
-        pages.push({ html: coverHtml, type: 'cover' });
+        // Cover is already in the DOM, add it to pages array
+        const coverPage = document.getElementById('cover-page');
+        if (coverPage) {
+            pages.push({ html: coverPage.outerHTML, type: 'cover', element: coverPage });
+        } else {
+            // Fallback: load cover via fetch
+            try {
+                const coverResponse = await fetch('pages/cover.html');
+                const coverHtml = await coverResponse.text();
+                pages.push({ html: coverHtml, type: 'cover' });
+            } catch (error) {
+                console.warn('Could not load cover:', error);
+            }
+        }
         
         // Table of Contents
-        const tocResponse = await fetch('pages/toc.html');
-        const tocHtml = await tocResponse.text();
-        pages.push({ html: tocHtml, type: 'toc' });
+        try {
+            const tocResponse = await fetch('pages/toc.html');
+            const tocHtml = await tocResponse.text();
+            pages.push({ html: tocHtml, type: 'toc' });
+        } catch (error) {
+            console.warn('Could not load TOC:', error);
+        }
         
-        // Load chapters
+        // Load chapters from markdown (convert to HTML)
         const chapters = [
-            { file: 'chapters/00-welcome-desk.html', title: 'The Welcome Desk' },
-            { file: 'chapters/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority' },
-            // Add more chapters as they're converted
+            { file: 'chapters/00-welcome-desk.html', title: 'The Welcome Desk', markdown: '../chapters/00-front-matter/00-welcome-desk.md' },
+            { file: 'chapters/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority', markdown: '../chapters/01-jurisdiction/01-jurisdiction-authority.md' },
         ];
         
         for (const chapter of chapters) {
             try {
-                const response = await fetch(`pages/${chapter.file}`);
+                // Try HTML first (from pages folder)
+                let response = await fetch(`pages/${chapter.file}`);
                 if (response.ok) {
                     const html = await response.text();
-                    // Split long chapters into multiple pages if needed
                     const chapterPages = splitIntoPages(html, chapter.title);
                     pages.push(...chapterPages);
+                } else {
+                    // Fallback: try markdown (from chapters folder)
+                    response = await fetch(chapter.markdown);
+                    if (response.ok) {
+                        const markdown = await response.text();
+                        const html = markdownToHtml(markdown, chapter.title);
+                        const chapterPages = splitIntoPages(html, chapter.title);
+                        pages.push(...chapterPages);
+                    } else {
+                        console.warn(`Could not load ${chapter.file} or ${chapter.markdown}`);
+                    }
                 }
             } catch (error) {
-                console.warn(`Could not load ${chapter.file}:`, error);
+                console.warn(`Error loading ${chapter.file}:`, error);
             }
         }
         
-        // Initialize flipbook
+        // Initialize flipbook (cover is already visible)
         initializeFlipbook();
+    }
+    
+    // Simple markdown to HTML converter
+    function markdownToHtml(markdown, title) {
+        let html = markdown;
+        
+        // Headers
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        // Bold and italic
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Links
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        
+        // Code blocks
+        html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Blockquotes
+        html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+        
+        // Horizontal rules
+        html = html.replace(/^---$/gim, '<hr>');
+        
+        // Paragraphs
+        const lines = html.split('\n');
+        html = lines.map(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.match(/^<[^>]+>/) || trimmed.match(/^#|^>|^`/)) {
+                return line;
+            }
+            return `<p>${trimmed}</p>`;
+        }).join('\n');
+        
+        return `<div class="page"><h1>${title}</h1>${html}</div>`;
     }
     
     function splitIntoPages(html, title) {
@@ -98,14 +161,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeFlipbook() {
-        // Clear existing content
-        flipbook.innerHTML = '';
+        // Cover is already in DOM, don't recreate it
+        const existingCover = document.getElementById('cover-page');
         
-        // Create page elements
+        // Create page elements for non-cover pages
         pages.forEach((page, index) => {
+            // Skip cover if it already exists in DOM
+            if (index === 0 && existingCover) {
+                return;
+            }
+            
             const pageElement = document.createElement('div');
             pageElement.className = `page ${page.type}`;
-            pageElement.innerHTML = page.html;
+            
+            // If page has element reference, use it; otherwise parse HTML
+            if (page.element) {
+                // Already in DOM, just reference it
+                page.element = page.element;
+            } else {
+                // Create new element from HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = page.html;
+                const content = tempDiv.firstElementChild || tempDiv;
+                pageElement.innerHTML = content.innerHTML;
+                pageElement.className = content.className || pageElement.className;
+            }
+            
             flipbook.appendChild(pageElement);
         });
         
@@ -129,15 +210,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeMobileFlip(pageElements) {
-        // Initialize pages for mobile
+        // Initialize pages for mobile - start with book "closed" (only cover visible)
         pageElements.forEach((page, i) => {
             page.classList.remove('active', 'next', 'prev', 'flipping');
             if (i === 0) {
+                // Cover is active and visible
                 page.classList.add('active');
-            } else if (i === 1) {
-                page.classList.add('next');
+                page.style.display = 'block';
+                page.style.opacity = '1';
+                page.style.transform = 'rotateY(0deg)';
+            } else {
+                // All other pages are hidden (book is closed)
+                page.style.display = 'none';
+                page.style.opacity = '0';
             }
         });
+        
+        // Show next page when user clicks next (opens the book)
+        if (pageElements.length > 1) {
+            pageElements[1].classList.add('next');
+        }
         
         function showPage(index, direction = 'next') {
             if (isFlipping || index < 0 || index >= pageElements.length) return;
@@ -154,23 +246,31 @@ document.addEventListener('DOMContentLoaded', function() {
             pageElements[prevIndex].classList.add('flipping');
             pageElements[targetIndex].classList.add('flipping');
             
+            // Show target page
+            pageElements[targetIndex].style.display = 'block';
+            
             if (direction === 'next') {
                 pageElements[prevIndex].style.transform = 'rotateY(-180deg)';
+                pageElements[prevIndex].style.opacity = '0';
             } else {
                 pageElements[prevIndex].style.transform = 'rotateY(180deg)';
+                pageElements[prevIndex].style.opacity = '0';
             }
             
             pageElements[targetIndex].style.transform = 'rotateY(0deg)';
+            pageElements[targetIndex].style.opacity = '1';
             pageElements[targetIndex].classList.add('active');
             
             // Update adjacent pages
             if (targetIndex > 0) {
                 pageElements[targetIndex - 1].classList.remove('active', 'next', 'prev');
                 pageElements[targetIndex - 1].classList.add('prev');
+                pageElements[targetIndex - 1].style.display = 'block';
             }
             if (targetIndex < pageElements.length - 1) {
                 pageElements[targetIndex + 1].classList.remove('active', 'next', 'prev');
                 pageElements[targetIndex + 1].classList.add('next');
+                pageElements[targetIndex + 1].style.display = 'block';
             }
             
             currentPage = targetIndex;
@@ -179,6 +279,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 pageElements[prevIndex].classList.remove('flipping');
                 pageElements[targetIndex].classList.remove('flipping');
                 pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+                // Hide previous page if not adjacent
+                if (Math.abs(prevIndex - targetIndex) > 1) {
+                    pageElements[prevIndex].style.display = 'none';
+                }
                 isFlipping = false;
                 updateControls();
             }, 600);
@@ -218,15 +322,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeDesktopFlip(pageElements) {
-        // Desktop: Book-style flip (original implementation)
+        // Desktop: Book-style flip - start with book "closed" (only cover visible)
         pageElements.forEach((page, i) => {
             page.style.zIndex = pages.length - i;
             if (i === 0) {
+                // Cover is visible (book closed)
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '1';
+                page.style.display = 'block';
             } else {
+                // All other pages are hidden (book is closed)
                 page.style.transform = 'rotateY(0deg)';
                 page.style.opacity = '0';
+                page.style.display = 'none';
             }
         });
         
@@ -236,6 +344,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const targetIndex = index;
             const prevIndex = currentPage;
+            
+            // Show target page
+            pageElements[targetIndex].style.display = 'block';
             
             // Update z-index for proper stacking
             pageElements[targetIndex].style.zIndex = pages.length + 1;
@@ -256,8 +367,11 @@ document.addEventListener('DOMContentLoaded', function() {
             currentPage = targetIndex;
             
             setTimeout(() => {
-                // Reset previous page position
+                // Reset previous page position and hide if not adjacent
                 pageElements[prevIndex].style.transform = 'rotateY(0deg)';
+                if (Math.abs(prevIndex - targetIndex) > 1) {
+                    pageElements[prevIndex].style.display = 'none';
+                }
                 isFlipping = false;
                 updateControls();
             }, 600);
@@ -301,7 +415,17 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         e.stopPropagation();
         if (currentPage < pages.length - 1 && !isFlipping) {
+            // When clicking next from cover, "open" the book
             window.flipToPage(currentPage + 1, 'next');
+        }
+    });
+    
+    // Also allow clicking on cover to open the book
+    document.addEventListener('click', (e) => {
+        const coverPage = document.getElementById('cover-page');
+        if (coverPage && coverPage.contains(e.target) && currentPage === 0 && pages.length > 1 && !isFlipping) {
+            // Clicking cover opens to first page
+            window.flipToPage(1, 'next');
         }
     });
     
