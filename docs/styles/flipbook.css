@@ -43,7 +43,7 @@ body {
     font-size: 18px;
     line-height: 1.8;
     color: #2c2c2c;
-    overflow-y: auto;
+    overflow: hidden;
     position: absolute;
     width: 100%;
     height: 100%;
@@ -410,8 +410,7 @@ body {
         top: 0;
         left: 0;
         transform-origin: left center;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: hidden;
     }
     
     /* Only show current page and adjacent pages on mobile */

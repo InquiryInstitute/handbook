@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function splitIntoPages(html, title) {
-        // Simple page splitting - split by headings or after ~600 words
+        // Split content to fit pages without scrolling - estimate based on character count
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
@@ -145,8 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const pages = [];
         let currentPageContent = '';
-        let wordCount = 0;
-        const wordsPerPage = 600; // Reduced for better page breaks
+        // Estimate: ~2000 characters per page (roughly 300-400 words, accounting for HTML)
+        const charsPerPage = 2000;
+        let currentChars = 0;
         
         // Check if title is already in content
         let hasTitle = false;
@@ -159,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!hasTitle) {
             currentPageContent = `<h1>${title}</h1>`;
+            currentChars += title.length + 10; // Rough estimate for h1 tag
         }
         
         for (const element of contentElements) {
@@ -167,18 +169,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 continue;
             }
             
-            const text = element.textContent || '';
-            const words = text.split(/\s+/).filter(w => w.length > 0).length;
+            const elementHTML = element.outerHTML;
+            const elementChars = elementHTML.length;
+            const textContent = element.textContent || '';
             
-            // Split on major headings (h2) if we're getting long
-            if (wordCount > 0 && (wordCount + words > wordsPerPage || (element.tagName === 'H2' && wordCount > 400))) {
+            // Split on major headings (h2) if we're getting close to limit
+            if (currentChars > 0 && (currentChars + elementChars > charsPerPage || (element.tagName === 'H2' && currentChars > charsPerPage * 0.7))) {
                 pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
                 currentPageContent = '';
-                wordCount = 0;
+                currentChars = 0;
             }
             
-            currentPageContent += element.outerHTML;
-            wordCount += words;
+            // If a single element is too long, split it (for very long paragraphs)
+            if (elementChars > charsPerPage && element.tagName === 'P') {
+                const text = textContent;
+                const words = text.split(/\s+/);
+                const wordsPerChunk = Math.floor(words.length / Math.ceil(elementChars / charsPerPage));
+                
+                for (let i = 0; i < words.length; i += wordsPerChunk) {
+                    const chunk = words.slice(i, i + wordsPerChunk).join(' ');
+                    if (currentChars + chunk.length > charsPerPage && currentChars > 0) {
+                        pages.push({ html: `<div class="page">${currentPageContent}</div>`, type: 'content' });
+                        currentPageContent = '';
+                        currentChars = 0;
+                    }
+                    currentPageContent += `<p>${chunk}</p>`;
+                    currentChars += chunk.length + 10;
+                }
+            } else {
+                currentPageContent += elementHTML;
+                currentChars += elementChars;
+            }
         }
         
         if (currentPageContent.trim()) {
