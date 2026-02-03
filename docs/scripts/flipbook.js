@@ -1,5 +1,5 @@
 // Handbook Flipbook Implementation
-// Simple, working two-page spread flipbook
+// Using stPageFlip with proper configuration
 
 document.addEventListener('DOMContentLoaded', function() {
     const flipbook = document.getElementById('flipbook');
@@ -8,23 +8,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPageSpan = document.getElementById('current-page');
     const totalPagesSpan = document.getElementById('total-pages');
     
-    // Detect mobile
     const isMobile = window.innerWidth <= 768;
     
-    // Page data
     const pages = [];
-    let currentPageIndex = 0;
-    let isFlipping = false;
+    let pageFlipInstance = null;
     
-    // Load pages
     async function loadPages() {
-        // Cover is already in DOM
         const coverPage = document.getElementById('cover-page');
         if (coverPage) {
             pages.push({ html: coverPage.outerHTML, type: 'cover', element: coverPage });
         }
         
-        // Table of Contents
         try {
             const tocResponse = await fetch('pages/toc.html');
             const tocHtml = await tocResponse.text();
@@ -33,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Could not load TOC:', error);
         }
         
-        // Load chapters
         const chapters = [
             { file: 'pages/chapters/00-front-matter/00-welcome-desk.html', title: 'The Welcome Desk' },
             { file: 'pages/chapters/01-jurisdiction/01-jurisdiction-authority.html', title: 'Jurisdiction & Authority' },
@@ -144,183 +137,138 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeFlipbook() {
-        // Clear container except cover
+        // Clear container
         const coverPage = document.getElementById('cover-page');
         const existingPages = Array.from(flipbook.querySelectorAll('.page:not(#cover-page)'));
         existingPages.forEach(page => page.remove());
         
-        // Create page elements
         const pageElements = [];
         
-        // Add cover
-        if (coverPage) {
-            pageElements.push(coverPage);
-        }
-        
-        // Create other pages
+        // Create all pages
         pages.forEach((page, index) => {
-            if (index === 0 && coverPage) return;
+            let pageElement;
             
-            const pageElement = document.createElement('div');
-            pageElement.className = `page ${page.type}`;
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = page.html;
-            const content = tempDiv.firstElementChild || tempDiv;
-            
-            if (!content.innerHTML || content.innerHTML.trim().length === 0) {
-                return;
-            }
-            
-            if (content.classList.contains('page')) {
-                pageElement.innerHTML = content.innerHTML;
-                Array.from(content.classList).forEach(cls => {
-                    if (cls !== 'page') pageElement.classList.add(cls);
-                });
+            if (index === 0 && coverPage) {
+                pageElement = coverPage;
             } else {
-                pageElement.innerHTML = content.innerHTML;
+                pageElement = document.createElement('div');
+                pageElement.className = `page ${page.type}`;
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = page.html;
+                const content = tempDiv.firstElementChild || tempDiv;
+                
+                if (!content.innerHTML || content.innerHTML.trim().length === 0) {
+                    return;
+                }
+                
+                if (content.classList.contains('page')) {
+                    pageElement.innerHTML = content.innerHTML;
+                    Array.from(content.classList).forEach(cls => {
+                        if (cls !== 'page') pageElement.classList.add(cls);
+                    });
+                } else {
+                    pageElement.innerHTML = content.innerHTML;
+                }
+                
+                if (!pageElement.classList.contains('cover')) {
+                    pageElement.style.background = '#faf8f3';
+                }
+                
+                flipbook.appendChild(pageElement);
             }
             
-            if (!pageElement.classList.contains('cover')) {
-                pageElement.style.background = '#faf8f3';
-            }
-            
-            flipbook.appendChild(pageElement);
             pageElements.push(pageElement);
         });
         
-        // Initialize display - cover starts on right side
-        if (!isMobile) {
-            // Desktop: position cover on right
+        // Initialize stPageFlip
+        const pageWidth = 800;
+        const pageHeight = 1000;
+        const bookWidth = isMobile ? pageWidth : pageWidth * 2;
+        
+        const settings = {
+            width: bookWidth,
+            height: pageHeight,
+            minWidth: isMobile ? 300 : bookWidth,
+            maxWidth: isMobile ? 800 : bookWidth,
+            minHeight: 400,
+            maxHeight: 1500,
+            maxShadowOpacity: 0.5,
+            showCover: false,
+            mobileScrollSupport: isMobile,
+            usePortrait: true,
+            startPage: 0,
+            drawShadow: true,
+            flippingTime: 600,
+            disableFlipByClick: false,
+            singlePageMode: isMobile
+        };
+        
+        try {
+            pageFlipInstance = new St.PageFlip(flipbook, settings);
+            pageFlipInstance.loadFromHTML(pageElements);
+            
+            pageFlipInstance.on('flip', (e) => {
+                updateControls(e.data);
+            });
+            
+            // Navigation
+            prevBtn.addEventListener('click', () => {
+                if (pageFlipInstance) pageFlipInstance.flipPrev();
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                if (pageFlipInstance) pageFlipInstance.flipNext();
+            });
+            
+            // Cover click
             if (coverPage) {
-                coverPage.style.left = '800px';
-                coverPage.style.width = '800px';
-                coverPage.style.display = 'block';
-                coverPage.style.opacity = '1';
+                coverPage.addEventListener('click', () => {
+                    if (pageFlipInstance && pageFlipInstance.getCurrentPageIndex() === 0) {
+                        pageFlipInstance.flipNext();
+                    }
+                });
             }
-        } else {
-            // Mobile: cover full width
-            if (coverPage) {
-                coverPage.style.left = '0';
-                coverPage.style.width = '100%';
-                coverPage.style.display = 'block';
-                coverPage.style.opacity = '1';
-            }
-        }
-        
-        totalPagesSpan.textContent = pageElements.length;
-        updateControls();
-        
-        // Navigation
-        prevBtn.addEventListener('click', () => {
-            if (currentPageIndex > 0 && !isFlipping) {
-                showPages(currentPageIndex - 1);
-            }
-        });
-        
-        nextBtn.addEventListener('click', () => {
-            if (currentPageIndex < pageElements.length - 1 && !isFlipping) {
-                showPages(currentPageIndex + 1);
-            }
-        });
-        
-        // Cover click
-        if (coverPage) {
-            coverPage.addEventListener('click', () => {
-                if (currentPageIndex === 0 && !isFlipping) {
-                    showPages(1);
+            
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                if (pageFlipInstance) {
+                    if (e.key === 'ArrowLeft') {
+                        pageFlipInstance.flipPrev();
+                    } else if (e.key === 'ArrowRight') {
+                        pageFlipInstance.flipNext();
+                    }
                 }
             });
+            
+            // TOC links
+            document.addEventListener('click', (e) => {
+                if (e.target.matches('.toc a[data-page]')) {
+                    e.preventDefault();
+                    const targetPage = parseInt(e.target.getAttribute('data-page'));
+                    if (pageFlipInstance) {
+                        pageFlipInstance.flip(targetPage);
+                    }
+                }
+            });
+            
+            updateControls(0);
+            totalPagesSpan.textContent = pageElements.length;
+            
+            console.log('stPageFlip initialized with', pageElements.length, 'pages');
+        } catch (error) {
+            console.error('Error initializing stPageFlip:', error);
         }
-        
-        // Keyboard
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' && currentPageIndex > 0) {
-                showPages(currentPageIndex - 1);
-            } else if (e.key === 'ArrowRight' && currentPageIndex < pageElements.length - 1) {
-                showPages(currentPageIndex + 1);
-            }
-        });
-        
-        // TOC links
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.toc a[data-page]')) {
-                e.preventDefault();
-                const targetPage = parseInt(e.target.getAttribute('data-page'));
-                showPages(targetPage);
-            }
-        });
     }
     
-    function showPages(index) {
-        if (isFlipping || index < 0 || index >= pages.length) return;
-        
-        isFlipping = true;
-        const pageElements = Array.from(flipbook.querySelectorAll('.page'));
-        const prevIndex = currentPageIndex;
-        currentPageIndex = index;
-        
-        // Hide all pages
-        pageElements.forEach(page => {
-            page.style.display = 'none';
-            page.style.opacity = '0';
-        });
-        
-        // Show current pages (two-page spread on desktop)
-        if (isMobile) {
-            // Mobile: single page
-            if (pageElements[index]) {
-                pageElements[index].style.display = 'block';
-                pageElements[index].style.opacity = '1';
-            }
-        } else {
-            // Desktop: two-page spread
-            // For cover (index 0), show only on right
-            if (index === 0) {
-                if (pageElements[0]) {
-                    pageElements[0].style.display = 'block';
-                    pageElements[0].style.opacity = '1';
-                    pageElements[0].style.left = '800px';
-                    pageElements[0].style.width = '800px';
-                }
-            } else {
-                // For other pages, show left and right
-                const leftIndex = index % 2 === 0 ? index - 1 : index - 1;
-                const rightIndex = index;
-                
-                // Left page (if exists and not cover)
-                if (leftIndex >= 0 && pageElements[leftIndex] && leftIndex !== 0) {
-                    pageElements[leftIndex].style.display = 'block';
-                    pageElements[leftIndex].style.opacity = '1';
-                    pageElements[leftIndex].style.left = '0';
-                    pageElements[leftIndex].style.width = '800px';
-                }
-                
-                // Right page
-                if (pageElements[rightIndex]) {
-                    pageElements[rightIndex].style.display = 'block';
-                    pageElements[rightIndex].style.opacity = '1';
-                    pageElements[rightIndex].style.left = '800px';
-                    pageElements[rightIndex].style.width = '800px';
-                }
-            }
+    function updateControls(currentPageIndex = null) {
+        if (pageFlipInstance) {
+            const current = currentPageIndex !== null ? currentPageIndex : pageFlipInstance.getCurrentPageIndex();
+            currentPageSpan.textContent = current + 1;
+            prevBtn.disabled = current === 0;
+            nextBtn.disabled = current >= pages.length - 1;
         }
-        
-        // Animate
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                isFlipping = false;
-                updateControls();
-            }, 300);
-        });
     }
     
-    function updateControls() {
-        currentPageSpan.textContent = currentPageIndex + 1;
-        prevBtn.disabled = currentPageIndex === 0;
-        nextBtn.disabled = currentPageIndex >= pages.length - 1;
-    }
-    
-    // Load pages
     loadPages();
 });
