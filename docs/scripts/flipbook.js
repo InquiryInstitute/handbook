@@ -254,30 +254,27 @@ document.addEventListener('DOMContentLoaded', function() {
             pageFlipInstance.on('flip', (e) => {
                 const currentPage = e.data;
                 updateControls(currentPage);
-                
-                // Ensure pages are visible after flip
-                setTimeout(() => {
-                    pageElements.forEach((page, index) => {
-                        const isCurrent = index === currentPage;
-                        const isNext = index === currentPage + 1;
-                        const isPrev = index === currentPage - 1;
-                        
-                        if (isCurrent || isNext || isPrev) {
-                            page.style.visibility = 'visible';
-                            page.style.opacity = '1';
-                        }
-                    });
-                }, 100);
             });
             
-            // Initial page visibility
-            pageFlipInstance.on('init', () => {
-                // Make sure first page (cover) is visible
-                if (pageElements[0]) {
-                    pageElements[0].style.visibility = 'visible';
-                    pageElements[0].style.opacity = '1';
-                }
-            });
+            // Ensure cover starts on right side for desktop
+            if (!isMobile) {
+                pageFlipInstance.on('init', () => {
+                    // For desktop, we want the cover to appear on the right initially
+                    // stPageFlip should handle this, but we can ensure it
+                    const coverPage = pageElements[0];
+                    if (coverPage) {
+                        // Wait a bit for stPageFlip to initialize
+                        setTimeout(() => {
+                            // Check if cover needs to be positioned on right
+                            const hasRightClass = coverPage.classList.contains('stf__item--right');
+                            if (!hasRightClass) {
+                                // Force right positioning for cover
+                                coverPage.classList.add('stf__item--right');
+                            }
+                        }, 100);
+                    }
+                });
+            }
             
             // Navigation buttons
             prevBtn.addEventListener('click', () => {

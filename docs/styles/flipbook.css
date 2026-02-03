@@ -39,31 +39,15 @@ body {
     z-index: 1;
 }
 
-/* Desktop: two-page spread */
+/* Desktop: two-page spread - let stPageFlip handle positioning */
 @media (min-width: 769px) {
     #flipbook {
-        display: flex;
-        flex-direction: row;
+        /* stPageFlip will manage the layout */
     }
     
-    .page {
-        width: 50%; /* Each page takes half the width */
-    }
-    
-    .page.left-page {
-        left: 0;
-        transform-origin: right center;
-    }
-    
-    .page.right-page {
-        left: 50%;
-        transform-origin: left center;
-    }
-    
-    .page.cover {
-        width: 50%; /* Cover is always right half */
-        left: 50%; /* Position on right side */
-        transform-origin: left center;
+    /* stPageFlip adds --right class to right pages */
+    .page.stf__item--right {
+        /* Right page positioning handled by stPageFlip */
     }
 }
 
