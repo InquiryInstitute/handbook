@@ -4,7 +4,7 @@
   "description": "Handbook for the Recently Deceased - A Practical Guide for Faculty of Inquiry Institute",
   "scripts": {
     "build:pages": "node scripts/build-pages.js",
-    "build:pdf": "node scripts/generate-pdf.js",
+    "build:pdf": "node scripts/generate-pdf-complete.js",
     "build:images": "node scripts/render-html-pages.js",
     "build:all": "npm run build:pages && npm run build:images",
     "dev": "python3 -m http.server 8000 --directory docs"

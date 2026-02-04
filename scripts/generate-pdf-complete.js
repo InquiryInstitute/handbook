@@ -38,6 +38,41 @@ async function generatePDF() {
     return pdfPath;
 }
 
+function markdownToHTML(markdown) {
+    let html = markdown
+        // Headers
+        .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+        .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+        .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>')
+        // Bold and italic
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        // Code
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+        // Blockquotes
+        .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>');
+    
+    // Split into paragraphs
+    const paragraphs = html.split(/\n\n+/).filter(p => p.trim());
+    html = paragraphs.map(para => {
+        para = para.trim();
+        if (!para) return '';
+        // Don't wrap headers, blockquotes, or horizontal rules
+        if (para.match(/^<(h[1-6]|blockquote|hr)/)) {
+            return para;
+        }
+        // Convert single newlines to <br> within paragraphs
+        para = para.replace(/\n/g, '<br>');
+        return `<p>${para}</p>`;
+    }).join('\n');
+    
+    return html;
+}
+
 async function createFullHTML() {
     const chaptersDir = path.join(__dirname, '../chapters');
     const chapters = [];
@@ -77,7 +112,7 @@ async function createFullHTML() {
 <head>
     <meta charset="UTF-8">
     <title>Handbook for the Recently Deceased</title>
-    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Cinzel+Decorative:wght@400&family=Spectral+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Cinzel+Decorative:wght@400&family=Spectral+SC:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
         @page {
             size: 1600px 1000px;
@@ -93,19 +128,14 @@ async function createFullHTML() {
             margin: 0;
             padding: 0;
             background: #1a1a1a;
+            color: #2c2c2c;
         }
-        .page {
-            width: 1600px;
+        
+        /* Cover Page */
+        .cover-page {
+            width: 800px;
             height: 1000px;
             page-break-after: always;
-            padding: 60px 80px;
-            box-sizing: border-box;
-            background: #faf8f3;
-            color: #2c2c2c;
-            font-size: 18px;
-            line-height: 1.8;
-        }
-        .cover-page {
             background: #3d2817;
             background-image: 
                 radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.2) 0%, transparent 50%),
@@ -116,25 +146,18 @@ async function createFullHTML() {
             justify-content: space-between;
             align-items: center;
             text-align: center;
-            padding: 0;
-        }
-        .cover-content {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 60px 80px;
+            padding: 80px 60px;
+            box-sizing: border-box;
         }
         .cover-title-section {
             margin-top: 2rem;
         }
         .cover-prefix {
             font-family: 'Spectral SC', serif;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             letter-spacing: 0.15em;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
         .cover-page h1 {
             font-family: 'Cinzel Decorative', serif;
@@ -144,7 +167,7 @@ async function createFullHTML() {
             font-weight: 400;
         }
         .cover-image {
-            margin: 2rem 0;
+            margin: 3rem 0;
         }
         .cover-image img {
             max-width: 450px;
@@ -161,125 +184,256 @@ async function createFullHTML() {
             margin: 0.5rem 0;
         }
         .tagline {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-style: italic;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
+            line-height: 1.6;
         }
-        h1 { 
-            font-size: 3rem; 
-            margin: 1.5rem 0 1rem 0; 
+        
+        /* Content Pages */
+        .page {
+            width: 800px;
+            height: 1000px;
+            page-break-after: always;
+            background: #faf8f3;
+            color: #2c2c2c;
+            padding: 70px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        /* Two-column layout for content */
+        .page-content {
+            column-count: 2;
+            column-gap: 40px;
+            column-rule: 1px solid #e0ddd5;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* Typography */
+        h1 {
             font-family: 'Spectral SC', serif;
+            font-size: 2.2rem;
             font-weight: 600;
+            margin: 0 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #8b4513;
+            column-span: all;
+            break-after: avoid;
         }
-        h2 { 
-            font-size: 2rem; 
-            margin: 1.5rem 0 1rem 0; 
+        h2 {
             font-family: 'Spectral SC', serif;
+            font-size: 1.6rem;
             font-weight: 600;
+            margin: 1.8rem 0 1rem 0;
+            color: #5a3a1f;
+            break-after: avoid;
         }
-        h3 { 
-            font-size: 1.5rem; 
-            margin: 1rem 0 0.5rem 0; 
+        h3 {
+            font-family: 'Spectral SC', serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.8rem 0;
+            color: #6b4a2f;
+            break-after: avoid;
         }
-        p { 
-            margin: 1rem 0; 
-            line-height: 1.8; 
+        p {
+            margin: 0 0 1rem 0;
+            line-height: 1.75;
+            text-align: justify;
+            hyphens: auto;
+            orphans: 3;
+            widows: 3;
         }
         blockquote {
-            border-left: 4px solid #8b4513;
+            border-left: 3px solid #8b4513;
             padding-left: 1.5rem;
             margin: 1.5rem 0;
             font-style: italic;
+            color: #4a3a2a;
+            break-inside: avoid;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #d0ccc0;
+            margin: 2rem 0;
+            column-span: all;
         }
         strong {
             font-weight: 600;
+            color: #3a2a1a;
         }
         em {
             font-style: italic;
+        }
+        code {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9em;
+            background: #f0ede5;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        a {
+            color: #8b4513;
+            text-decoration: none;
+            border-bottom: 1px dotted #8b4513;
+        }
+        a:hover {
+            border-bottom: 1px solid #8b4513;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+            break-inside: avoid;
+        }
+        li {
+            margin: 0.5rem 0;
+            line-height: 1.75;
+        }
+        
+        /* Table of Contents */
+        .toc-page {
+            width: 800px;
+            height: 1000px;
+            page-break-after: always;
+            background: #faf8f3;
+            padding: 70px 60px;
+            box-sizing: border-box;
+        }
+        .toc-page h1 {
+            border-bottom: 3px solid #8b4513;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+        }
+        .toc-list {
+            list-style: none;
+            padding: 0;
+        }
+        .toc-list li {
+            margin: 0.8rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .toc-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #8b4513;
+            font-weight: bold;
+        }
+        .toc-list a {
+            color: #2c2c2c;
+            text-decoration: none;
+            border-bottom: none;
+        }
+        .toc-list a:hover {
+            color: #8b4513;
+        }
+        
+        /* Page numbers and headers */
+        .page-number {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            font-size: 0.85rem;
+            color: #8b6f47;
+            font-family: 'Spectral SC', serif;
+        }
+        
+        /* Avoid breaking */
+        h1, h2, h3, blockquote, pre {
+            break-inside: avoid;
+        }
+        p {
+            break-inside: avoid;
         }
     </style>
 </head>
 <body>`;
     
-    // Add cover
+    // Add cover (single page, will be positioned on right)
     html += `
-    <div class="page cover-page">
-        <div class="cover-content">
-            <div class="cover-title-section">
-                <p class="cover-prefix">Handbook for the</p>
-                <h1>Recently<br>Deceased</h1>
-            </div>`;
+    <div class="cover-page">
+        <div class="cover-title-section">
+            <p class="cover-prefix">Handbook for the</p>
+            <h1>Recently<br>Deceased</h1>
+        </div>`;
     
     if (coverImageExists) {
         html += `
-            <div class="cover-image">
-                <img src="file://${coverImagePath}" alt="Inquiry Institute" />
-            </div>`;
+        <div class="cover-image">
+            <img src="file://${coverImagePath}" alt="Inquiry Institute" />
+        </div>`;
     }
     
     html += `
-            <div class="cover-footer">
-                <p class="subtitle">A Practical Guide for Faculty</p>
-                <p class="institute-name">Inquiry Institute</p>
-                <p class="tagline">"If you are reading this,<br>you have already begun."</p>
-            </div>
+        <div class="cover-footer">
+            <p class="subtitle">A Practical Guide for Faculty</p>
+            <p class="institute-name">Inquiry Institute</p>
+            <p class="tagline">"If you are reading this,<br>you have already begun."</p>
         </div>
     </div>`;
     
     // Add TOC if available
     if (tocHtml) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = tocHtml;
-        const tocContent = tempDiv.querySelector('.page') || tempDiv;
-        html += `<div class="page">${tocContent.innerHTML}</div>`;
+        // Extract TOC content
+        const tocMatch = tocHtml.match(/<div[^>]*class="page"[^>]*>([\s\S]*?)<\/div>/);
+        if (tocMatch) {
+            html += `<div class="toc-page">
+                <h1>Table of Contents</h1>
+                ${tocMatch[1]}
+            </div>`;
+        }
     }
     
-    // Add chapters
+    // Add chapters with proper page breaks
+    let pageCount = 2; // Cover + TOC
+    
     for (const chapter of chapters) {
-        const lines = chapter.content.split('\n');
-        let currentPage = '<div class="page">';
-        let hasTitle = false;
-        let lineCount = 0;
+        const htmlContent = markdownToHTML(chapter.content);
         
-        for (const line of lines) {
-            if (!line.trim()) {
-                currentPage += '<br>';
-                lineCount++;
-                continue;
-            }
+        // Split content into pages
+        const words = htmlContent.split(/\s+/);
+        const wordsPerPage = 450; // Approximate words per page in two columns
+        const pages = [];
+        
+        let currentPage = [];
+        let currentWordCount = 0;
+        
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            const wordLength = word.replace(/<[^>]+>/g, '').split(/\s+/).length;
             
-            // Simple markdown to HTML
-            let htmlLine = line
-                .replace(/^### (.*)$/, '<h3>$1</h3>')
-                .replace(/^## (.*)$/, '<h2>$1</h2>')
-                .replace(/^# (.*)$/, '<h1>$1</h1>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/^> (.*)$/, '<blockquote>$1</blockquote>');
-            
-            if (line.match(/^#/)) {
-                hasTitle = true;
-            }
-            
-            if (htmlLine.trim() && !htmlLine.match(/^<[h]/) && !htmlLine.match(/^<blockquote/)) {
-                htmlLine = `<p>${htmlLine}</p>`;
-            }
-            
-            currentPage += htmlLine;
-            lineCount++;
-            
-            // Split pages approximately every 35-40 lines
-            if (lineCount > 40 && line.trim() === '') {
-                currentPage += '</div>';
-                html += currentPage;
-                currentPage = '<div class="page">';
-                lineCount = 0;
+            // Check if adding this word would exceed page limit
+            if (currentWordCount + wordLength > wordsPerPage && currentPage.length > 0) {
+                pages.push(currentPage.join(' '));
+                currentPage = [word];
+                currentWordCount = wordLength;
+            } else {
+                currentPage.push(word);
+                currentWordCount += wordLength;
             }
         }
         
-        if (currentPage !== '<div class="page">') {
-            currentPage += '</div>';
-            html += currentPage;
+        if (currentPage.length > 0) {
+            pages.push(currentPage.join(' '));
+        }
+        
+        // Render each page
+        for (let i = 0; i < pages.length; i++) {
+            const isFirstPage = i === 0;
+            html += `<div class="page">`;
+            if (isFirstPage) {
+                // First page of chapter gets full-width header
+                html += `<div class="page-content">${pages[i]}</div>`;
+            } else {
+                html += `<div class="page-content">${pages[i]}</div>`;
+            }
+            html += `<div class="page-number">${pageCount++}</div>`;
+            html += `</div>`;
         }
     }
     
