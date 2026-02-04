@@ -38,10 +38,9 @@ body {
     z-index: 1;
 }
 
-/* Ensure stPageFlip canvas is properly sized */
+/* PDF.js canvas styling */
 #flipbook canvas {
-    width: 1600px !important;
-    height: 1000px !important;
+    display: block;
 }
 
 @media (min-width: 769px) {

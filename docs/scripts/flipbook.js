@@ -91,11 +91,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.style.width = '1600px';
                 container.style.height = '1000px';
                 container.style.position = 'relative';
-                container.style.display = 'flex';
                 container.style.margin = '0 auto';
                 
-                // For cover (page 1), show only on right
+                // For cover (page 1), show only on right with blank left
                 if (pageNum === 1) {
+                    // Blank left page
+                    const leftCanvas = document.createElement('canvas');
+                    const leftContext = leftCanvas.getContext('2d');
+                    leftCanvas.width = 800;
+                    leftCanvas.height = 1000;
+                    leftCanvas.style.width = '800px';
+                    leftCanvas.style.height = '1000px';
+                    leftCanvas.style.position = 'absolute';
+                    leftCanvas.style.left = '0';
+                    leftCanvas.style.top = '0';
+                    leftContext.fillStyle = '#1a1a1a';
+                    leftContext.fillRect(0, 0, 800, 1000);
+                    container.appendChild(leftCanvas);
+                    
+                    // Cover on right
                     const rightCanvas = document.createElement('canvas');
                     const rightContext = rightCanvas.getContext('2d');
                     const scale = 800 / viewport.width;
@@ -104,7 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     rightCanvas.height = 1000;
                     rightCanvas.style.width = '800px';
                     rightCanvas.style.height = '1000px';
-                    rightCanvas.style.marginLeft = '800px';
+                    rightCanvas.style.position = 'absolute';
+                    rightCanvas.style.left = '800px';
+                    rightCanvas.style.top = '0';
                     
                     page.render({
                         canvasContext: rightContext,
@@ -124,8 +140,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     leftCanvas.height = 1000;
                     leftCanvas.style.width = '800px';
                     leftCanvas.style.height = '1000px';
+                    leftCanvas.style.position = 'absolute';
+                    leftCanvas.style.left = '0';
+                    leftCanvas.style.top = '0';
                     
-                    // Left page
+                    // Right page
+                    const rightCanvas = document.createElement('canvas');
+                    const rightContext = rightCanvas.getContext('2d');
+                    rightCanvas.width = 800;
+                    rightCanvas.height = 1000;
+                    rightCanvas.style.width = '800px';
+                    rightCanvas.style.height = '1000px';
+                    rightCanvas.style.position = 'absolute';
+                    rightCanvas.style.left = '800px';
+                    rightCanvas.style.top = '0';
+                    
+                    // Render left page
                     if (leftPageNum <= totalPages && leftPageNum > 0) {
                         pdfDoc.getPage(leftPageNum).then(leftPage => {
                             const leftViewport = leftPage.getViewport({ scale: 1 });
@@ -144,14 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         leftContext.fillRect(0, 0, 800, 1000);
                     }
                     
-                    // Right page
-                    const rightCanvas = document.createElement('canvas');
-                    const rightContext = rightCanvas.getContext('2d');
-                    rightCanvas.width = 800;
-                    rightCanvas.height = 1000;
-                    rightCanvas.style.width = '800px';
-                    rightCanvas.style.height = '1000px';
-                    
+                    // Render right page
                     if (rightPageNum <= totalPages) {
                         pdfDoc.getPage(rightPageNum).then(rightPage => {
                             const rightViewport = rightPage.getViewport({ scale: 1 });
