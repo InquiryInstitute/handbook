@@ -8,8 +8,9 @@ async function generatePDF() {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     
-    // Set viewport for two-page spread (1600x1000)
-    await page.setViewportSize({ width: 1600, height: 1000 });
+    // Set viewport for standard US Letter size (8.5" x 11" at 96 DPI = 816x1056)
+    // For two-page spread: 1632x1056
+    await page.setViewportSize({ width: 1632, height: 1056 });
     
     // Create HTML with all content
     const html = await createFullHTML();
@@ -19,15 +20,15 @@ async function generatePDF() {
     await page.goto(`file://${tempPath}`);
     await page.waitForTimeout(3000); // Wait for fonts and images to load
     
-    // Generate PDF
+    // Generate PDF - US Letter size (8.5" x 11")
     const pdfPath = path.join(__dirname, '../docs/handbook.pdf');
     await page.pdf({
         path: pdfPath,
-        width: '1600px',
-        height: '1000px',
+        width: '11in',
+        height: '8.5in', // Landscape for two-page spread
         printBackground: true,
         margin: { top: 0, right: 0, bottom: 0, left: 0 },
-        preferCSSPageSize: false
+        preferCSSPageSize: true
     });
     
     console.log(`PDF generated: ${pdfPath}`);
@@ -115,7 +116,7 @@ async function createFullHTML() {
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Cinzel+Decorative:wght@400&family=Spectral+SC:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
         @page {
-            size: 1600px 1000px;
+            size: 11in 8.5in landscape;
             margin: 0;
         }
         * {
@@ -133,8 +134,8 @@ async function createFullHTML() {
         
         /* Cover Page */
         .cover-page {
-            width: 800px;
-            height: 1000px;
+            width: 5.5in;
+            height: 8.5in;
             page-break-after: always;
             background: #3d2817;
             background-image: 
@@ -192,59 +193,82 @@ async function createFullHTML() {
         
         /* Content Pages */
         .page {
-            width: 800px;
-            height: 1000px;
+            width: 5.5in;
+            height: 8.5in;
             page-break-after: always;
             background: #faf8f3;
             color: #2c2c2c;
-            padding: 70px 60px;
+            padding: 0.5in 0.4in;
             box-sizing: border-box;
             position: relative;
         }
         
-        /* Two-column layout for content */
+        /* Three-column layout for content (stereo instructions style) */
         .page-content {
-            column-count: 2;
-            column-gap: 40px;
-            column-rule: 1px solid #e0ddd5;
+            column-count: 3;
+            column-gap: 0.25in;
+            column-rule: 1px solid #d0ccc0;
             height: 100%;
             overflow: hidden;
+            font-size: 0.75rem;
+            line-height: 1.4;
         }
         
-        /* Typography */
+        /* Typography - compact technical manual style */
         h1 {
             font-family: 'Spectral SC', serif;
-            font-size: 2.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin: 0 0 1.5rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #8b4513;
+            margin: 0 0 0.5rem 0;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #8b4513;
             column-span: all;
             break-after: avoid;
         }
         h2 {
             font-family: 'Spectral SC', serif;
-            font-size: 1.6rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin: 1.8rem 0 1rem 0;
+            margin: 0.8rem 0 0.4rem 0;
             color: #5a3a1f;
             break-after: avoid;
         }
         h3 {
             font-family: 'Spectral SC', serif;
-            font-size: 1.2rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin: 1.5rem 0 0.8rem 0;
+            margin: 0.6rem 0 0.3rem 0;
             color: #6b4a2f;
             break-after: avoid;
         }
         p {
-            margin: 0 0 1rem 0;
-            line-height: 1.75;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
             text-align: justify;
             hyphens: auto;
-            orphans: 3;
-            widows: 3;
+            orphans: 2;
+            widows: 2;
+            font-size: 0.75rem;
+        }
+        
+        /* Alchemical illustrations */
+        .alchemical-symbol {
+            display: inline-block;
+            width: 0.8em;
+            height: 0.8em;
+            margin: 0 0.2em;
+            vertical-align: middle;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="%238b4513" stroke-width="2"/><path d="M50 10 L50 90 M10 50 L90 50" stroke="%238b4513" stroke-width="1.5"/><circle cx="50" cy="50" r="15" fill="none" stroke="%238b4513" stroke-width="1"/></svg>') no-repeat center;
+            background-size: contain;
+        }
+        
+        .marginal-note {
+            font-size: 0.65rem;
+            color: #6b5a4a;
+            font-style: italic;
+            margin-left: 0.5em;
+            border-left: 1px solid #d0ccc0;
+            padding-left: 0.3em;
         }
         blockquote {
             border-left: 3px solid #8b4513;
@@ -296,11 +320,11 @@ async function createFullHTML() {
         
         /* Table of Contents */
         .toc-page {
-            width: 800px;
-            height: 1000px;
+            width: 5.5in;
+            height: 8.5in;
             page-break-after: always;
             background: #faf8f3;
-            padding: 70px 60px;
+            padding: 0.5in 0.4in;
             box-sizing: border-box;
         }
         .toc-page h1 {
@@ -336,9 +360,9 @@ async function createFullHTML() {
         /* Page numbers and headers */
         .page-number {
             position: absolute;
-            bottom: 30px;
-            right: 60px;
-            font-size: 0.85rem;
+            bottom: 0.2in;
+            right: 0.3in;
+            font-size: 0.65rem;
             color: #8b6f47;
             font-family: 'Spectral SC', serif;
         }

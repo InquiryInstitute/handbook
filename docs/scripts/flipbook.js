@@ -91,41 +91,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 updateControls();
             });
-        } else {
-            // Desktop: two-page spread
-            const container = document.createElement('div');
-            container.style.width = '1600px';
-            container.style.height = '1000px';
-            container.style.position = 'relative';
-            container.style.margin = '0 auto';
+            } else {
+                // Desktop: two-page spread (11in x 8.5in landscape = 1056x816px at 96 DPI)
+                const container = document.createElement('div');
+                container.style.width = '1056px';
+                container.style.height = '816px';
+                container.style.position = 'relative';
+                container.style.margin = '0 auto';
             
-            if (spreadIndex === 0) {
-                // Cover: blank left, page 1 on right
+                if (spreadIndex === 0) {
+                // Cover: blank left, page 1 on right (5.5in x 8.5in = 528x816px at 96 DPI)
                 const leftCanvas = document.createElement('canvas');
                 const leftContext = leftCanvas.getContext('2d');
-                leftCanvas.width = 800;
-                leftCanvas.height = 1000;
-                leftCanvas.style.width = '800px';
-                leftCanvas.style.height = '1000px';
+                leftCanvas.width = 528;
+                leftCanvas.height = 816;
+                leftCanvas.style.width = '528px';
+                leftCanvas.style.height = '816px';
                 leftCanvas.style.position = 'absolute';
                 leftCanvas.style.left = '0';
                 leftCanvas.style.top = '0';
                 leftContext.fillStyle = '#1a1a1a';
-                leftContext.fillRect(0, 0, 800, 1000);
+                leftContext.fillRect(0, 0, 528, 816);
                 container.appendChild(leftCanvas);
                 
                 pdfDoc.getPage(1).then(page => {
                     const viewport = page.getViewport({ scale: 1 });
-                    const scale = 800 / viewport.width;
+                    const scale = 528 / viewport.width;
                     const scaledViewport = page.getViewport({ scale: scale });
                     const rightCanvas = document.createElement('canvas');
                     const rightContext = rightCanvas.getContext('2d');
-                    rightCanvas.width = 800;
-                    rightCanvas.height = 1000;
-                    rightCanvas.style.width = '800px';
-                    rightCanvas.style.height = '1000px';
+                    rightCanvas.width = 528;
+                    rightCanvas.height = 816;
+                    rightCanvas.style.width = '528px';
+                    rightCanvas.style.height = '816px';
                     rightCanvas.style.position = 'absolute';
-                    rightCanvas.style.left = '800px';
+                    rightCanvas.style.left = '528px';
                     rightCanvas.style.top = '0';
                     
                     page.render({
@@ -144,29 +144,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const leftCanvas = document.createElement('canvas');
                 const leftContext = leftCanvas.getContext('2d');
-                leftCanvas.width = 800;
-                leftCanvas.height = 1000;
-                leftCanvas.style.width = '800px';
-                leftCanvas.style.height = '1000px';
+                leftCanvas.width = 528;
+                leftCanvas.height = 816;
+                leftCanvas.style.width = '528px';
+                leftCanvas.style.height = '816px';
                 leftCanvas.style.position = 'absolute';
                 leftCanvas.style.left = '0';
                 leftCanvas.style.top = '0';
                 
                 const rightCanvas = document.createElement('canvas');
                 const rightContext = rightCanvas.getContext('2d');
-                rightCanvas.width = 800;
-                rightCanvas.height = 1000;
-                rightCanvas.style.width = '800px';
-                rightCanvas.style.height = '1000px';
+                rightCanvas.width = 528;
+                rightCanvas.height = 816;
+                rightCanvas.style.width = '528px';
+                rightCanvas.style.height = '816px';
                 rightCanvas.style.position = 'absolute';
-                rightCanvas.style.left = '800px';
+                rightCanvas.style.left = '528px';
                 rightCanvas.style.top = '0';
                 
                 // Render left page
                 const leftPromise = leftPageNum <= totalPages ? 
                     pdfDoc.getPage(leftPageNum).then(leftPage => {
                         const leftViewport = leftPage.getViewport({ scale: 1 });
-                        const scale = 800 / leftViewport.width;
+                        const scale = 528 / leftViewport.width;
                         const scaledViewport = leftPage.getViewport({ scale: scale });
                         leftPage.render({
                             canvasContext: leftContext,
@@ -175,14 +175,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }) : 
                     Promise.resolve().then(() => {
                         leftContext.fillStyle = '#1a1a1a';
-                        leftContext.fillRect(0, 0, 800, 1000);
+                        leftContext.fillRect(0, 0, 528, 816);
                     });
                 
                 // Render right page
                 const rightPromise = rightPageNum <= totalPages ?
                     pdfDoc.getPage(rightPageNum).then(rightPage => {
                         const rightViewport = rightPage.getViewport({ scale: 1 });
-                        const scale = 800 / rightViewport.width;
+                        const scale = 528 / rightViewport.width;
                         const scaledViewport = rightPage.getViewport({ scale: scale });
                         rightPage.render({
                             canvasContext: rightContext,
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }) :
                     Promise.resolve().then(() => {
                         rightContext.fillStyle = '#1a1a1a';
-                        rightContext.fillRect(0, 0, 800, 1000);
+                        rightContext.fillRect(0, 0, 528, 816);
                     });
                 
                 Promise.all([leftPromise, rightPromise]).then(() => {
