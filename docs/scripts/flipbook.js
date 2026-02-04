@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const isMobile = window.innerWidth <= 768;
     let pdfDoc = null;
-    let currentPage = 1;
+    let currentSpread = 0; // 0 = cover, 1 = pages 2-3, 2 = pages 4-5, etc.
     let totalPages = 0;
     
     // Load PDF.js
@@ -29,28 +29,30 @@ document.addEventListener('DOMContentLoaded', function() {
             totalPages = pdf.numPages;
             totalPagesSpan.textContent = totalPages;
             
-            // Render first page
-            renderPage(1);
+            // Render first spread (cover)
+            renderSpread(0);
             
             // Navigation
             prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    renderPage(currentPage - 1);
+                if (currentSpread > 0) {
+                    renderSpread(currentSpread - 1);
                 }
             });
             
             nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    renderPage(currentPage + 1);
+                const maxSpread = Math.floor((totalPages - 1) / 2);
+                if (currentSpread < maxSpread) {
+                    renderSpread(currentSpread + 1);
                 }
             });
             
             // Keyboard
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft' && currentPage > 1) {
-                    renderPage(currentPage - 1);
-                } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
-                    renderPage(currentPage + 1);
+                const maxSpread = Math.floor((totalPages - 1) / 2);
+                if (e.key === 'ArrowLeft' && currentSpread > 0) {
+                    renderSpread(currentSpread - 1);
+                } else if (e.key === 'ArrowRight' && currentSpread < maxSpread) {
+                    renderSpread(currentSpread + 1);
                 }
             });
             
@@ -61,18 +63,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function renderPage(pageNum) {
+    function renderSpread(spreadIndex) {
         if (!pdfDoc) return;
         
-        pdfDoc.getPage(pageNum).then(page => {
-            const viewport = page.getViewport({ scale: isMobile ? 0.5 : 1 });
-            
-            // Clear flipbook
-            flipbook.innerHTML = '';
-            
-            // Create canvas for single page (mobile) or two-page spread (desktop)
-            if (isMobile) {
-                // Mobile: single page
+        currentSpread = spreadIndex;
+        
+        // Clear flipbook
+        flipbook.innerHTML = '';
+        
+        if (isMobile) {
+            // Mobile: single page
+            const pageNum = spreadIndex === 0 ? 1 : (spreadIndex * 2);
+            pdfDoc.getPage(pageNum).then(page => {
+                const viewport = page.getViewport({ scale: 0.5 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
@@ -85,35 +88,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     canvasContext: context,
                     viewport: viewport
                 });
-            } else {
-                // Desktop: two-page spread
-                const container = document.createElement('div');
-                container.style.width = '1600px';
-                container.style.height = '1000px';
-                container.style.position = 'relative';
-                container.style.margin = '0 auto';
                 
-                // For cover (page 1), show only on right with blank left
-                if (pageNum === 1) {
-                    // Blank left page
-                    const leftCanvas = document.createElement('canvas');
-                    const leftContext = leftCanvas.getContext('2d');
-                    leftCanvas.width = 800;
-                    leftCanvas.height = 1000;
-                    leftCanvas.style.width = '800px';
-                    leftCanvas.style.height = '1000px';
-                    leftCanvas.style.position = 'absolute';
-                    leftCanvas.style.left = '0';
-                    leftCanvas.style.top = '0';
-                    leftContext.fillStyle = '#1a1a1a';
-                    leftContext.fillRect(0, 0, 800, 1000);
-                    container.appendChild(leftCanvas);
-                    
-                    // Cover on right
-                    const rightCanvas = document.createElement('canvas');
-                    const rightContext = rightCanvas.getContext('2d');
+                updateControls();
+            });
+        } else {
+            // Desktop: two-page spread
+            const container = document.createElement('div');
+            container.style.width = '1600px';
+            container.style.height = '1000px';
+            container.style.position = 'relative';
+            container.style.margin = '0 auto';
+            
+            if (spreadIndex === 0) {
+                // Cover: blank left, page 1 on right
+                const leftCanvas = document.createElement('canvas');
+                const leftContext = leftCanvas.getContext('2d');
+                leftCanvas.width = 800;
+                leftCanvas.height = 1000;
+                leftCanvas.style.width = '800px';
+                leftCanvas.style.height = '1000px';
+                leftCanvas.style.position = 'absolute';
+                leftCanvas.style.left = '0';
+                leftCanvas.style.top = '0';
+                leftContext.fillStyle = '#1a1a1a';
+                leftContext.fillRect(0, 0, 800, 1000);
+                container.appendChild(leftCanvas);
+                
+                pdfDoc.getPage(1).then(page => {
+                    const viewport = page.getViewport({ scale: 1 });
                     const scale = 800 / viewport.width;
                     const scaledViewport = page.getViewport({ scale: scale });
+                    const rightCanvas = document.createElement('canvas');
+                    const rightContext = rightCanvas.getContext('2d');
                     rightCanvas.width = 800;
                     rightCanvas.height = 1000;
                     rightCanvas.style.width = '800px';
@@ -128,86 +134,81 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     
                     container.appendChild(rightCanvas);
-                } else {
-                    // Show left and right pages
-                    const leftPageNum = pageNum % 2 === 0 ? pageNum - 1 : pageNum;
-                    const rightPageNum = pageNum % 2 === 0 ? pageNum : pageNum + 1;
-                    
-                    // Left page
-                    const leftCanvas = document.createElement('canvas');
-                    const leftContext = leftCanvas.getContext('2d');
-                    leftCanvas.width = 800;
-                    leftCanvas.height = 1000;
-                    leftCanvas.style.width = '800px';
-                    leftCanvas.style.height = '1000px';
-                    leftCanvas.style.position = 'absolute';
-                    leftCanvas.style.left = '0';
-                    leftCanvas.style.top = '0';
-                    
-                    // Right page
-                    const rightCanvas = document.createElement('canvas');
-                    const rightContext = rightCanvas.getContext('2d');
-                    rightCanvas.width = 800;
-                    rightCanvas.height = 1000;
-                    rightCanvas.style.width = '800px';
-                    rightCanvas.style.height = '1000px';
-                    rightCanvas.style.position = 'absolute';
-                    rightCanvas.style.left = '800px';
-                    rightCanvas.style.top = '0';
-                    
-                    // Render left page
-                    if (leftPageNum <= totalPages && leftPageNum > 0) {
-                        pdfDoc.getPage(leftPageNum).then(leftPage => {
-                            const leftViewport = leftPage.getViewport({ scale: 1 });
-                            const scale = 800 / leftViewport.width;
-                            const scaledViewport = leftPage.getViewport({ scale: scale });
-                            leftCanvas.width = 800;
-                            leftCanvas.height = 1000;
-                            leftPage.render({
-                                canvasContext: leftContext,
-                                viewport: scaledViewport
-                            });
+                    flipbook.appendChild(container);
+                    updateControls();
+                });
+            } else {
+                // Regular spread: left and right pages
+                const leftPageNum = spreadIndex * 2;
+                const rightPageNum = leftPageNum + 1;
+                
+                const leftCanvas = document.createElement('canvas');
+                const leftContext = leftCanvas.getContext('2d');
+                leftCanvas.width = 800;
+                leftCanvas.height = 1000;
+                leftCanvas.style.width = '800px';
+                leftCanvas.style.height = '1000px';
+                leftCanvas.style.position = 'absolute';
+                leftCanvas.style.left = '0';
+                leftCanvas.style.top = '0';
+                
+                const rightCanvas = document.createElement('canvas');
+                const rightContext = rightCanvas.getContext('2d');
+                rightCanvas.width = 800;
+                rightCanvas.height = 1000;
+                rightCanvas.style.width = '800px';
+                rightCanvas.style.height = '1000px';
+                rightCanvas.style.position = 'absolute';
+                rightCanvas.style.left = '800px';
+                rightCanvas.style.top = '0';
+                
+                // Render left page
+                const leftPromise = leftPageNum <= totalPages ? 
+                    pdfDoc.getPage(leftPageNum).then(leftPage => {
+                        const leftViewport = leftPage.getViewport({ scale: 1 });
+                        const scale = 800 / leftViewport.width;
+                        const scaledViewport = leftPage.getViewport({ scale: scale });
+                        leftPage.render({
+                            canvasContext: leftContext,
+                            viewport: scaledViewport
                         });
-                    } else {
-                        // Blank left page
+                    }) : 
+                    Promise.resolve().then(() => {
                         leftContext.fillStyle = '#1a1a1a';
                         leftContext.fillRect(0, 0, 800, 1000);
-                    }
-                    
-                    // Render right page
-                    if (rightPageNum <= totalPages) {
-                        pdfDoc.getPage(rightPageNum).then(rightPage => {
-                            const rightViewport = rightPage.getViewport({ scale: 1 });
-                            const scale = 800 / rightViewport.width;
-                            const scaledViewport = rightPage.getViewport({ scale: scale });
-                            rightCanvas.width = 800;
-                            rightCanvas.height = 1000;
-                            rightPage.render({
-                                canvasContext: rightContext,
-                                viewport: scaledViewport
-                            });
+                    });
+                
+                // Render right page
+                const rightPromise = rightPageNum <= totalPages ?
+                    pdfDoc.getPage(rightPageNum).then(rightPage => {
+                        const rightViewport = rightPage.getViewport({ scale: 1 });
+                        const scale = 800 / rightViewport.width;
+                        const scaledViewport = rightPage.getViewport({ scale: scale });
+                        rightPage.render({
+                            canvasContext: rightContext,
+                            viewport: scaledViewport
                         });
-                    } else {
-                        // Blank right page
+                    }) :
+                    Promise.resolve().then(() => {
                         rightContext.fillStyle = '#1a1a1a';
                         rightContext.fillRect(0, 0, 800, 1000);
-                    }
-                    
+                    });
+                
+                Promise.all([leftPromise, rightPromise]).then(() => {
                     container.appendChild(leftCanvas);
                     container.appendChild(rightCanvas);
-                }
-                
-                flipbook.appendChild(container);
+                    flipbook.appendChild(container);
+                    updateControls();
+                });
             }
-            
-            currentPage = pageNum;
-            updateControls();
-        });
+        }
     }
     
     function updateControls() {
-        currentPageSpan.textContent = currentPage;
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage >= totalPages;
+        const maxSpread = Math.floor((totalPages - 1) / 2);
+        const displayPage = currentSpread === 0 ? 1 : (currentSpread * 2);
+        currentPageSpan.textContent = displayPage;
+        prevBtn.disabled = currentSpread === 0;
+        nextBtn.disabled = currentSpread >= maxSpread;
     }
 });
