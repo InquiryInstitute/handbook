@@ -1,5 +1,5 @@
 // Handbook Flipbook Implementation
-// Using stPageFlip with rendered page images
+// Display PDF using PDF.js viewer
 
 document.addEventListener('DOMContentLoaded', function() {
     const flipbook = document.getElementById('flipbook');
@@ -9,117 +9,139 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPagesSpan = document.getElementById('total-pages');
     
     const isMobile = window.innerWidth <= 768;
-    let pageFlipInstance = null;
+    let pdfDoc = null;
+    let currentPage = 1;
+    let totalPages = 0;
     
-    // Get list of page images
-    async function getPageImages() {
-        // We know we have pages 000-010 (11 pages)
-        const imagePaths = [];
-        for (let i = 0; i < 11; i++) {
-            const pageNum = i.toString().padStart(3, '0');
-            // Use absolute paths from root
-            imagePaths.push(`/handbook/pages/images/page-${pageNum}.png`);
-        }
-        return imagePaths;
-    }
+    // Load PDF.js
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = initializePDF;
+    document.head.appendChild(script);
     
-    async function initializeFlipbook() {
-        const imagePaths = await getPageImages();
+    function initializePDF() {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        // Initialize stPageFlip
-        const pageWidth = 800;
-        const pageHeight = 1000;
-        const bookWidth = isMobile ? pageWidth : pageWidth * 2;
+        const pdfPath = 'handbook.pdf';
         
-        const settings = {
-            width: bookWidth,
-            height: pageHeight,
-            minWidth: isMobile ? 300 : bookWidth,
-            maxWidth: isMobile ? 800 : bookWidth,
-            minHeight: 400,
-            maxHeight: 1500,
-            maxShadowOpacity: 0.5,
-            showCover: false,
-            mobileScrollSupport: isMobile,
-            usePortrait: true,
-            startPage: 0,
-            drawShadow: true,
-            flippingTime: 600,
-            disableFlipByClick: false,
-            // Images are 800px single pages - stPageFlip will show two side by side
-            singlePageMode: isMobile,
-            autoSize: false,
-            size: 'fixed'
-        };
-        
-        try {
-            pageFlipInstance = new St.PageFlip(flipbook, settings);
+        pdfjsLib.getDocument(pdfPath).promise.then(pdf => {
+            pdfDoc = pdf;
+            totalPages = pdf.numPages;
+            totalPagesSpan.textContent = totalPages;
             
-            // Load pages from images
-            // stPageFlip expects images to be sized correctly (800x1000 each for two-page spread)
-            pageFlipInstance.loadFromImages(imagePaths);
-            
-            // Force update after loading to ensure proper layout
-            setTimeout(() => {
-                if (pageFlipInstance) {
-                    pageFlipInstance.update();
-                    console.log('stPageFlip updated, current page:', pageFlipInstance.getCurrentPageIndex());
-                }
-            }, 500);
-            
-            pageFlipInstance.on('flip', (e) => {
-                updateControls(e.data);
-            });
+            // Render first page
+            renderPage(1);
             
             // Navigation
             prevBtn.addEventListener('click', () => {
-                if (pageFlipInstance) pageFlipInstance.flipPrev();
+                if (currentPage > 1) {
+                    renderPage(currentPage - 1);
+                }
             });
             
             nextBtn.addEventListener('click', () => {
-                if (pageFlipInstance) pageFlipInstance.flipNext();
+                if (currentPage < totalPages) {
+                    renderPage(currentPage + 1);
+                }
             });
             
             // Keyboard
             document.addEventListener('keydown', (e) => {
-                if (pageFlipInstance) {
-                    if (e.key === 'ArrowLeft') {
-                        pageFlipInstance.flipPrev();
-                    } else if (e.key === 'ArrowRight') {
-                        pageFlipInstance.flipNext();
-                    }
+                if (e.key === 'ArrowLeft' && currentPage > 1) {
+                    renderPage(currentPage - 1);
+                } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+                    renderPage(currentPage + 1);
                 }
             });
             
-            // TOC links
-            document.addEventListener('click', (e) => {
-                if (e.target.matches('.toc a[data-page]')) {
-                    e.preventDefault();
-                    const targetPage = parseInt(e.target.getAttribute('data-page'));
-                    if (pageFlipInstance) {
-                        pageFlipInstance.flip(targetPage);
-                    }
+            updateControls();
+        }).catch(err => {
+            console.error('Error loading PDF:', err);
+            flipbook.innerHTML = '<div style="padding: 2rem; text-align: center; color: #fff;"><p>Error loading PDF. Please ensure handbook.pdf exists.</p></div>';
+        });
+    }
+    
+    function renderPage(pageNum) {
+        if (!pdfDoc) return;
+        
+        pdfDoc.getPage(pageNum).then(page => {
+            const viewport = page.getViewport({ scale: isMobile ? 0.5 : 1 });
+            
+            // Clear flipbook
+            flipbook.innerHTML = '';
+            
+            // Create canvas for single page (mobile) or two-page spread (desktop)
+            if (isMobile) {
+                // Mobile: single page
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
+                flipbook.appendChild(canvas);
+                
+                page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                });
+            } else {
+                // Desktop: two-page spread
+                const container = document.createElement('div');
+                container.style.width = '1600px';
+                container.style.height = '1000px';
+                container.style.position = 'relative';
+                container.style.display = 'flex';
+                
+                // Left page (previous page if exists, otherwise blank)
+                const leftCanvas = document.createElement('canvas');
+                const leftContext = leftCanvas.getContext('2d');
+                leftCanvas.style.width = '800px';
+                leftCanvas.style.height = '1000px';
+                
+                if (pageNum > 1) {
+                    pdfDoc.getPage(pageNum - 1).then(leftPage => {
+                        const leftViewport = leftPage.getViewport({ scale: 1 });
+                        leftCanvas.width = leftViewport.width / 2;
+                        leftCanvas.height = leftViewport.height;
+                        leftPage.render({
+                            canvasContext: leftContext,
+                            viewport: leftPage.getViewport({ scale: 1, offsetX: -leftViewport.width / 2 })
+                        });
+                    });
+                } else {
+                    leftCanvas.width = 800;
+                    leftCanvas.height = 1000;
+                    leftContext.fillStyle = '#1a1a1a';
+                    leftContext.fillRect(0, 0, 800, 1000);
                 }
-            });
+                
+                // Right page (current page)
+                const rightCanvas = document.createElement('canvas');
+                const rightContext = rightCanvas.getContext('2d');
+                rightCanvas.width = viewport.width / 2;
+                rightCanvas.height = viewport.height;
+                rightCanvas.style.width = '800px';
+                rightCanvas.style.height = '1000px';
+                
+                page.render({
+                    canvasContext: rightContext,
+                    viewport: page.getViewport({ scale: 1, offsetX: -viewport.width / 2 })
+                });
+                
+                container.appendChild(leftCanvas);
+                container.appendChild(rightCanvas);
+                flipbook.appendChild(container);
+            }
             
-            updateControls(0);
-            totalPagesSpan.textContent = imagePaths.length;
-            
-            console.log('stPageFlip initialized with', imagePaths.length, 'image pages');
-        } catch (error) {
-            console.error('Error initializing stPageFlip:', error);
-        }
+            currentPage = pageNum;
+            updateControls();
+        });
     }
     
-    function updateControls(currentPageIndex = null) {
-        if (pageFlipInstance) {
-            const current = currentPageIndex !== null ? currentPageIndex : pageFlipInstance.getCurrentPageIndex();
-            currentPageSpan.textContent = current + 1;
-            prevBtn.disabled = current === 0;
-            const totalPages = parseInt(totalPagesSpan.textContent) || 11;
-            nextBtn.disabled = current >= totalPages - 1;
-        }
+    function updateControls() {
+        currentPageSpan.textContent = currentPage;
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage >= totalPages;
     }
-    
-    initializeFlipbook();
 });

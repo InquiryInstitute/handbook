@@ -24,5 +24,3 @@ venv/
 *.tmp
 *.log
 .cache/
-node_modules/
-package*.json
