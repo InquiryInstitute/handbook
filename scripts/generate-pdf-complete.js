@@ -205,49 +205,75 @@ async function createFullHTML() {
         /* Three-column layout for content (stereo instructions style) */
         .page-content {
             column-count: 3;
-            column-gap: 0.25in;
-            column-rule: 1px solid #d0ccc0;
+            column-gap: 0.3in;
+            column-rule: 1px solid #c8c0b0;
+            column-fill: balance;
             height: 100%;
             overflow: hidden;
-            font-size: 0.75rem;
-            line-height: 1.4;
+            font-size: 0.7rem;
+            line-height: 1.5;
+            text-align: justify;
+            hyphens: auto;
+            hyphenate-limit-chars: 6 3 3;
+            hyphenate-limit-lines: 2;
+            hyphenate-limit-last: always;
+            hyphenate-limit-zone: 8%;
         }
         
         /* Typography - compact technical manual style */
         h1 {
             font-family: 'Spectral SC', serif;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
-            margin: 0 0 0.5rem 0;
-            padding-bottom: 0.25rem;
-            border-bottom: 1px solid #8b4513;
+            margin: 0 0 0.4rem 0;
+            padding-bottom: 0.2rem;
+            border-bottom: 2px solid #8b4513;
             column-span: all;
             break-after: avoid;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
         h2 {
             font-family: 'Spectral SC', serif;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin: 0.8rem 0 0.4rem 0;
+            margin: 0.6rem 0 0.3rem 0;
             color: #5a3a1f;
             break-after: avoid;
+            break-inside: avoid;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
         }
         h3 {
             font-family: 'Spectral SC', serif;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            margin: 0.6rem 0 0.3rem 0;
+            margin: 0.5rem 0 0.25rem 0;
             color: #6b4a2f;
             break-after: avoid;
+            break-inside: avoid;
+            letter-spacing: 0.02em;
         }
         p {
-            margin: 0 0 0.5rem 0;
-            line-height: 1.4;
+            margin: 0 0 0.4rem 0;
+            line-height: 1.5;
             text-align: justify;
             hyphens: auto;
-            orphans: 2;
-            widows: 2;
-            font-size: 0.75rem;
+            orphans: 3;
+            widows: 3;
+            font-size: 0.7rem;
+            text-indent: 0.15in;
+        }
+        p:first-of-type {
+            text-indent: 0;
+        }
+        p:first-of-type::first-letter {
+            font-size: 1.3em;
+            line-height: 0.8;
+            float: left;
+            padding-right: 0.05em;
+            font-weight: 600;
+            color: #8b4513;
         }
         
         /* Alchemical illustrations */
@@ -270,17 +296,22 @@ async function createFullHTML() {
             padding-left: 0.3em;
         }
         blockquote {
-            border-left: 3px solid #8b4513;
-            padding-left: 1.5rem;
-            margin: 1.5rem 0;
+            border-left: 2px solid #8b4513;
+            padding-left: 0.2in;
+            margin: 0.4rem 0.2rem;
             font-style: italic;
             color: #4a3a2a;
             break-inside: avoid;
+            font-size: 0.65rem;
+            line-height: 1.4;
+            background: #f5f3ed;
+            padding: 0.2rem 0.2rem 0.2rem 0.3in;
+            border-radius: 0 2px 2px 0;
         }
         hr {
             border: none;
-            border-top: 1px solid #d0ccc0;
-            margin: 2rem 0;
+            border-top: 1px solid #c8c0b0;
+            margin: 0.5rem 0;
             column-span: all;
         }
         strong {
@@ -308,13 +339,23 @@ async function createFullHTML() {
         
         /* Lists */
         ul, ol {
-            margin: 1rem 0;
-            padding-left: 2rem;
+            margin: 0.3rem 0;
+            padding-left: 0.25in;
             break-inside: avoid;
+            font-size: 0.7rem;
         }
         li {
-            margin: 0.5rem 0;
-            line-height: 1.75;
+            margin: 0.2rem 0;
+            line-height: 1.5;
+            text-align: justify;
+        }
+        ul {
+            list-style-type: '▪';
+            list-style-position: outside;
+        }
+        ol {
+            list-style-type: decimal;
+            list-style-position: outside;
         }
         
         /* Table of Contents */
@@ -367,10 +408,55 @@ async function createFullHTML() {
         }
         
         /* Avoid breaking */
-        h1, h2, h3, blockquote, pre {
+        h1, h2, h3, blockquote, pre, figure {
             break-inside: avoid;
         }
-        p {
+        
+        /* Better column balancing */
+        .page-content > *:first-child {
+            margin-top: 0;
+        }
+        
+        /* Improve readability with better spacing */
+        h2 + p, h3 + p {
+            margin-top: 0.2rem;
+        }
+        
+        /* Alchemical symbols and marginalia */
+        .alchemical-symbol {
+            display: inline-block;
+            width: 0.7em;
+            height: 0.7em;
+            margin: 0 0.15em;
+            vertical-align: middle;
+            opacity: 0.7;
+        }
+        
+        .marginal-note {
+            font-size: 0.6rem;
+            color: #6b5a4a;
+            font-style: italic;
+            margin: 0.2rem 0.3rem;
+            padding-left: 0.15in;
+            border-left: 1px solid #d0ccc0;
+            break-inside: avoid;
+        }
+        
+        /* Improve code blocks */
+        code {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            background: #f0ede5;
+            padding: 1px 3px;
+            border-radius: 2px;
+            break-inside: avoid;
+        }
+        
+        /* Better link styling */
+        a {
+            color: #8b4513;
+            text-decoration: none;
+            border-bottom: 1px dotted #8b4513;
             break-inside: avoid;
         }
     </style>
