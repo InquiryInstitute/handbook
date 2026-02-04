@@ -75,7 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mobile: single page
             const pageNum = spreadIndex === 0 ? 1 : (spreadIndex * 2);
             pdfDoc.getPage(pageNum).then(page => {
-                const viewport = page.getViewport({ scale: 0.5 });
+                // Scale appropriately for mobile (smaller viewport)
+                const scale = (window.innerWidth * 0.9) / (8.5 * 72); // Scale to fit width
+                const viewport = page.getViewport({ scale: scale });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
@@ -115,22 +117,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.appendChild(leftCanvas);
                 
                 pdfDoc.getPage(1).then(page => {
-                    const viewport = page.getViewport({ scale: 1 });
-                    const scale = 816 / viewport.width;
-                    const scaledViewport = page.getViewport({ scale: scale });
+                    // PDF is 8.5" x 11" at 72 DPI = 612x792 points
+                    // We want to render at 96 DPI = 816x1056 pixels
+                    // Scale factor: 96/72 = 1.333...
+                    const scale = 96 / 72; // Convert from PDF 72 DPI to screen 96 DPI
+                    const viewport = page.getViewport({ scale: scale });
                     const rightCanvas = document.createElement('canvas');
                     const rightContext = rightCanvas.getContext('2d');
-                    rightCanvas.width = 816;
-                    rightCanvas.height = 1056;
-                    rightCanvas.style.width = '816px';
-                    rightCanvas.style.height = '1056px';
+                    rightCanvas.width = viewport.width;
+                    rightCanvas.height = viewport.height;
+                    rightCanvas.style.width = viewport.width + 'px';
+                    rightCanvas.style.height = viewport.height + 'px';
                     rightCanvas.style.position = 'absolute';
                     rightCanvas.style.left = '816px';
                     rightCanvas.style.top = '0';
                     
                     page.render({
                         canvasContext: rightContext,
-                        viewport: scaledViewport
+                        viewport: viewport
                     });
                     
                     container.appendChild(rightCanvas);
@@ -165,12 +169,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Render left page
                 const leftPromise = leftPageNum <= totalPages ? 
                     pdfDoc.getPage(leftPageNum).then(leftPage => {
-                        const leftViewport = leftPage.getViewport({ scale: 1 });
-                        const scale = 816 / leftViewport.width;
-                        const scaledViewport = leftPage.getViewport({ scale: scale });
+                        // Scale from PDF 72 DPI to screen 96 DPI
+                        const scale = 96 / 72;
+                        const viewport = leftPage.getViewport({ scale: scale });
+                        leftCanvas.width = viewport.width;
+                        leftCanvas.height = viewport.height;
+                        leftCanvas.style.width = viewport.width + 'px';
+                        leftCanvas.style.height = viewport.height + 'px';
                         leftPage.render({
                             canvasContext: leftContext,
-                            viewport: scaledViewport
+                            viewport: viewport
                         });
                     }) : 
                     Promise.resolve().then(() => {
@@ -181,12 +189,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Render right page
                 const rightPromise = rightPageNum <= totalPages ?
                     pdfDoc.getPage(rightPageNum).then(rightPage => {
-                        const rightViewport = rightPage.getViewport({ scale: 1 });
-                        const scale = 816 / rightViewport.width;
-                        const scaledViewport = rightPage.getViewport({ scale: scale });
+                        // Scale from PDF 72 DPI to screen 96 DPI
+                        const scale = 96 / 72;
+                        const viewport = rightPage.getViewport({ scale: scale });
+                        rightCanvas.width = viewport.width;
+                        rightCanvas.height = viewport.height;
+                        rightCanvas.style.width = viewport.width + 'px';
+                        rightCanvas.style.height = viewport.height + 'px';
                         rightPage.render({
                             canvasContext: rightContext,
-                            viewport: scaledViewport
+                            viewport: viewport
                         });
                     }) :
                     Promise.resolve().then(() => {
