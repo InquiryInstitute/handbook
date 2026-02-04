@@ -25,11 +25,11 @@ body {
 }
 
 #flipbook {
-    width: 1056px; /* 11in landscape spread (11" x 8.5") */
-    height: 816px; /* 8.5in */
+    width: 1632px; /* Two 8.5" x 11" pages side by side (1632x1056px at 96 DPI) */
+    height: 1056px; /* 11in */
     max-width: 95vw;
     max-height: 90vh;
-    aspect-ratio: 11 / 8.5;
+    aspect-ratio: 16.32 / 10.56;
     margin: 0 auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     position: relative;
@@ -45,8 +45,8 @@ body {
 
 @media (min-width: 769px) {
     #flipbook {
-        width: 1056px;
-        height: 816px;
+        width: 1632px;
+        height: 1056px;
     }
 }
 

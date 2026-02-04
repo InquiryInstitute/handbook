@@ -8,9 +8,8 @@ async function generatePDF() {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     
-    // Set viewport for standard US Letter size (8.5" x 11" at 96 DPI = 816x1056)
-    // For two-page spread: 1632x1056
-    await page.setViewportSize({ width: 1632, height: 1056 });
+    // Set viewport for US Letter portrait pages (8.5" x 11" at 96 DPI = 816x1056)
+    await page.setViewportSize({ width: 816, height: 1056 });
     
     // Create HTML with all content
     const html = await createFullHTML();
@@ -20,12 +19,12 @@ async function generatePDF() {
     await page.goto(`file://${tempPath}`);
     await page.waitForTimeout(3000); // Wait for fonts and images to load
     
-    // Generate PDF - US Letter size (8.5" x 11")
+    // Generate PDF - US Letter portrait (8.5" x 11")
     const pdfPath = path.join(__dirname, '../docs/handbook.pdf');
     await page.pdf({
         path: pdfPath,
-        width: '11in',
-        height: '8.5in', // Landscape for two-page spread
+        width: '8.5in',
+        height: '11in',
         printBackground: true,
         margin: { top: 0, right: 0, bottom: 0, left: 0 },
         preferCSSPageSize: true
@@ -116,7 +115,7 @@ async function createFullHTML() {
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Cinzel+Decorative:wght@400&family=Spectral+SC:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
         @page {
-            size: 11in 8.5in landscape;
+            size: 8.5in 11in;
             margin: 0;
         }
         * {
