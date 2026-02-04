@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 rightDiv.style.position = 'absolute';
                 rightDiv.style.left = '816px';
                 rightDiv.style.top = '0';
+                rightDiv.style.overflow = 'visible';
                 rightDiv.innerHTML = renderPageContent(page);
                 container.appendChild(rightDiv);
             } else {

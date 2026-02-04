@@ -75,6 +75,50 @@ body {
     align-items: center;
     text-align: center;
     padding: 80px 60px;
+    overflow: visible;
+    width: 816px !important;
+    height: 1056px !important;
+}
+
+.cover-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.cover-title-section {
+    margin-top: 2rem;
+    width: 100%;
+    text-align: center;
+}
+
+.cover-prefix {
+    font-family: 'Spectral SC', serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    width: 100%;
+    color: #e8e6e1;
+}
+
+.cover-page h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 9rem;
+    line-height: 1.1;
+    margin: 1rem 0;
+    font-weight: 400;
+    color: #e8e6e1;
+    text-align: center;
+    width: 100%;
+    overflow: visible;
+    word-break: normal;
 }
 
 .page-content {
