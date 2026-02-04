@@ -133,8 +133,8 @@ async function createFullHTML() {
         
         /* Cover Page */
         .cover-page {
-            width: 5.5in;
-            height: 8.5in;
+            width: 8.5in;
+            height: 11in;
             page-break-after: always;
             background: #3d2817;
             background-image: 
@@ -192,8 +192,8 @@ async function createFullHTML() {
         
         /* Content Pages */
         .page {
-            width: 5.5in;
-            height: 8.5in;
+            width: 8.5in;
+            height: 11in;
             page-break-after: always;
             background: #faf8f3;
             color: #2c2c2c;
@@ -319,8 +319,8 @@ async function createFullHTML() {
         
         /* Table of Contents */
         .toc-page {
-            width: 5.5in;
-            height: 8.5in;
+            width: 8.5in;
+            height: 11in;
             page-break-after: always;
             background: #faf8f3;
             padding: 0.5in 0.4in;
