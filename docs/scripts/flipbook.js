@@ -92,45 +92,88 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.style.height = '1000px';
                 container.style.position = 'relative';
                 container.style.display = 'flex';
+                container.style.margin = '0 auto';
                 
-                // Left page (previous page if exists, otherwise blank)
-                const leftCanvas = document.createElement('canvas');
-                const leftContext = leftCanvas.getContext('2d');
-                leftCanvas.style.width = '800px';
-                leftCanvas.style.height = '1000px';
-                
-                if (pageNum > 1) {
-                    pdfDoc.getPage(pageNum - 1).then(leftPage => {
-                        const leftViewport = leftPage.getViewport({ scale: 1 });
-                        leftCanvas.width = leftViewport.width / 2;
-                        leftCanvas.height = leftViewport.height;
-                        leftPage.render({
-                            canvasContext: leftContext,
-                            viewport: leftPage.getViewport({ scale: 1, offsetX: -leftViewport.width / 2 })
-                        });
+                // For cover (page 1), show only on right
+                if (pageNum === 1) {
+                    const rightCanvas = document.createElement('canvas');
+                    const rightContext = rightCanvas.getContext('2d');
+                    const scale = 800 / viewport.width;
+                    const scaledViewport = page.getViewport({ scale: scale });
+                    rightCanvas.width = 800;
+                    rightCanvas.height = 1000;
+                    rightCanvas.style.width = '800px';
+                    rightCanvas.style.height = '1000px';
+                    rightCanvas.style.marginLeft = '800px';
+                    
+                    page.render({
+                        canvasContext: rightContext,
+                        viewport: scaledViewport
                     });
+                    
+                    container.appendChild(rightCanvas);
                 } else {
+                    // Show left and right pages
+                    const leftPageNum = pageNum % 2 === 0 ? pageNum - 1 : pageNum;
+                    const rightPageNum = pageNum % 2 === 0 ? pageNum : pageNum + 1;
+                    
+                    // Left page
+                    const leftCanvas = document.createElement('canvas');
+                    const leftContext = leftCanvas.getContext('2d');
                     leftCanvas.width = 800;
                     leftCanvas.height = 1000;
-                    leftContext.fillStyle = '#1a1a1a';
-                    leftContext.fillRect(0, 0, 800, 1000);
+                    leftCanvas.style.width = '800px';
+                    leftCanvas.style.height = '1000px';
+                    
+                    // Left page
+                    if (leftPageNum <= totalPages && leftPageNum > 0) {
+                        pdfDoc.getPage(leftPageNum).then(leftPage => {
+                            const leftViewport = leftPage.getViewport({ scale: 1 });
+                            const scale = 800 / leftViewport.width;
+                            const scaledViewport = leftPage.getViewport({ scale: scale });
+                            leftCanvas.width = 800;
+                            leftCanvas.height = 1000;
+                            leftPage.render({
+                                canvasContext: leftContext,
+                                viewport: scaledViewport
+                            });
+                        });
+                    } else {
+                        // Blank left page
+                        leftContext.fillStyle = '#1a1a1a';
+                        leftContext.fillRect(0, 0, 800, 1000);
+                    }
+                    
+                    // Right page
+                    const rightCanvas = document.createElement('canvas');
+                    const rightContext = rightCanvas.getContext('2d');
+                    rightCanvas.width = 800;
+                    rightCanvas.height = 1000;
+                    rightCanvas.style.width = '800px';
+                    rightCanvas.style.height = '1000px';
+                    
+                    if (rightPageNum <= totalPages) {
+                        pdfDoc.getPage(rightPageNum).then(rightPage => {
+                            const rightViewport = rightPage.getViewport({ scale: 1 });
+                            const scale = 800 / rightViewport.width;
+                            const scaledViewport = rightPage.getViewport({ scale: scale });
+                            rightCanvas.width = 800;
+                            rightCanvas.height = 1000;
+                            rightPage.render({
+                                canvasContext: rightContext,
+                                viewport: scaledViewport
+                            });
+                        });
+                    } else {
+                        // Blank right page
+                        rightContext.fillStyle = '#1a1a1a';
+                        rightContext.fillRect(0, 0, 800, 1000);
+                    }
+                    
+                    container.appendChild(leftCanvas);
+                    container.appendChild(rightCanvas);
                 }
                 
-                // Right page (current page)
-                const rightCanvas = document.createElement('canvas');
-                const rightContext = rightCanvas.getContext('2d');
-                rightCanvas.width = viewport.width / 2;
-                rightCanvas.height = viewport.height;
-                rightCanvas.style.width = '800px';
-                rightCanvas.style.height = '1000px';
-                
-                page.render({
-                    canvasContext: rightContext,
-                    viewport: page.getViewport({ scale: 1, offsetX: -viewport.width / 2 })
-                });
-                
-                container.appendChild(leftCanvas);
-                container.appendChild(rightCanvas);
                 flipbook.appendChild(container);
             }
             
