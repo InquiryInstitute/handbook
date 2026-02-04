@@ -130,17 +130,21 @@ document.addEventListener('DOMContentLoaded', function() {
             chapters: data.tableOfContents
         });
         
-        // Content pages
+        // Content pages - generate individual pages, then combine into spreads
         let currentPageContent = [];
         let currentWordCount = 0;
-        const wordsPerPage = 600; // Approximate words per page in three columns
+        const wordsPerPage = 500; // Approximate words per page in three columns
         
         data.chapters.forEach((chapter, chapterIndex) => {
             chapter.content.forEach(block => {
                 const blockHtml = renderBlock(block);
                 const wordCount = countWords(blockHtml);
                 
-                if (currentWordCount + wordCount > wordsPerPage && currentPageContent.length > 0) {
+                // Don't split headers from their content
+                const isHeader = block.type.startsWith('h');
+                const shouldBreak = !isHeader && currentWordCount + wordCount > wordsPerPage && currentPageContent.length > 0;
+                
+                if (shouldBreak) {
                     pages.push({
                         type: 'content',
                         content: currentPageContent.join('\n')
@@ -214,8 +218,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.appendChild(rightDiv);
             } else {
                 // Regular spread: left and right pages
-                const leftPageIndex = pageIndex * 2 - 1;
-                const rightPageIndex = pageIndex * 2;
+                // After cover (index 0), spreads start at index 1
+                // Spread 1 = pages 1-2, Spread 2 = pages 3-4, etc.
+                const leftPageIndex = (pageIndex - 1) * 2 + 1;
+                const rightPageIndex = leftPageIndex + 1;
                 
                 // Left page
                 const leftDiv = document.createElement('div');
@@ -226,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 leftDiv.style.left = '0';
                 leftDiv.style.top = '0';
                 
-                if (leftPageIndex < pages.length) {
+                if (leftPageIndex < pages.length && pages[leftPageIndex]) {
                     leftDiv.innerHTML = renderPageContent(pages[leftPageIndex]);
                 } else {
                     leftDiv.className = 'page blank-page';
@@ -242,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 rightDiv.style.left = '816px';
                 rightDiv.style.top = '0';
                 
-                if (rightPageIndex < pages.length) {
+                if (rightPageIndex < pages.length && pages[rightPageIndex]) {
                     rightDiv.innerHTML = renderPageContent(pages[rightPageIndex]);
                 } else {
                     rightDiv.className = 'page blank-page';
@@ -295,8 +301,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateControls() {
-        currentPageSpan.textContent = currentPage + 1;
+        // Calculate display page number (accounting for spreads)
+        let displayPage = 1;
+        if (currentPage === 0) {
+            displayPage = 1; // Cover
+        } else if (isMobile) {
+            displayPage = currentPage + 1;
+        } else {
+            // Desktop: page 0 = cover, page 1 = spread 1 (pages 1-2), etc.
+            if (currentPage === 0) {
+                displayPage = 1;
+            } else {
+                displayPage = (currentPage - 1) * 2 + 1;
+            }
+        }
+        
+        currentPageSpan.textContent = displayPage;
         prevBtn.disabled = currentPage === 0;
-        nextBtn.disabled = currentPage >= pages.length - 1;
+        
+        // Calculate total spreads for desktop
+        if (!isMobile && pages.length > 1) {
+            const totalSpreads = Math.ceil((pages.length - 1) / 2) + 1; // +1 for cover
+            totalPagesSpan.textContent = totalSpreads;
+        } else {
+            totalPagesSpan.textContent = pages.length;
+        }
     }
 });
